@@ -1,0 +1,169 @@
+# 시각-촉각 감각대체 시스템 설정
+# 하드웨어 기하 상수는 src/tactile_vision/geometry.py (STL 실측). 여기엔 튜닝값만.
+
+camera:
+  device: 0
+  width: 1280
+  height: 720
+  fps: 30
+  fourcc: MJPG
+  # 좌우 반전. 카메라가 사용자를 등지고 전방을 보면 false.
+  flip_horizontal: false
+  # 프레임 큐 크기. 1 = 항상 최신 프레임만, 지연 누적 방지.
+  queue_size: 1
+  # 장치 카메라: Logitech HD Pro Webcam C920 (USB 046d:082d), 2026-10-02 채택.
+  # 자동초점을 끄고 초점값을 고정한다. 자동초점이 렌즈를 움직이면 초점거리(화각)가 바뀌어
+  # 거리 추정·캘리브레이션이 흔들린다. C920은 다시 꽂으면 자동초점이 켜지므로 열 때마다 적용.
+  # 초점 컨트롤이 없는 카메라(고정초점)는 무시. null = 카메라 설정을 건드리지 않음.
+  autofocus: false
+  # C920 초점값 0~250(5 단위), 0 = 무한대 쪽. 0이 가장 선명 (2026-10-02 사용자 확인).
+  focus: 0
+
+depth:
+  # 2026-10-03부터 924x504(wide_hi). 이전 기본 504x280 엔진도 models/에 있다(input_spec: wide로 되돌림).
+  # 실내 모델 (Hypersim). scene.mode가 off면 이것 하나만 쓴다.
+  engine: models/da2_metric_hypersim_vits_924x504.engine
+  # 실외 모델 (Virtual KITTI 2). scene.mode가 auto / outdoor일 때 로드한다.
+  # 생성: python tools/build_engine.py --spec wide_hi --outdoor
+  outdoor_engine: models/da2_metric_vkitti_vits_924x504.engine
+  # geometry.INPUT_SPECS 키: faithful(420x336, 종횡비 정합) | wide(504x280, 넓은 FOV)
+  #   | wide_hi(924x504, wide와 같은 화각, 공식 해상도급 — 거리 스케일 편향 거의 없음, 연산 약 4배)
+  # 2026-10-03 실측 (Orin Nano Super 25W, TRT FP16): 깊이 1회 504x280 12.8 ms / 924x504 48~50 ms,
+  # 전체 파이프라인(YOLO26n + 판별 2 Hz) 초당 15.3 프레임 — logs/bench_2026-10-03/
+  input_spec: wide_hi
+  # metric 모델 학습 시 max_depth. hypersim=20(실내), vkitti=80(실외).
+  max_depth_m: 20.0
+  # 모델 출력이 미터 단위 metric인지. false면 상대 시차로 처리.
+  metric: true
+
+grid:
+  # 셀 대표값 산출. 장애물 회피는 '셀 내 최근접 표면'이 필요하므로 낮은 분위수.
+  # mean을 쓰면 기둥/의자다리가 배경에 평균화되어 사라짐.
+  reducer: percentile
+  percentile: 10.0        # metric 거리의 10분위 = 가까운 쪽
+  # 셀 경계 픽셀 무시 비율 (0.0~0.4). 인접 셀 누화 감소.
+  cell_margin: 0.0
+
+mapping:
+  # linear | log | disparity | relative_ema
+  mode: log
+  near_m: 0.5             # 이보다 가까우면 최대 단계 (충돌 임박)
+  far_m: 8.0              # 이보다 멀면 단계 0. scene.mode가 off가 아니면 scene.far_*_m을 대신 쓴다
+  levels: 8               # geometry.max_useful_levels() 상한을 넘지 말 것
+  stroke_mm: 9.0          # 실제 사용할 스트로크. 2026-10-05: 사용자 범위 140 tick(60~124.7도) ≈ 9.0 mm
+                          # (이전 20.9 mm = 150도). 8단계면 간격 1.29 mm — 손바닥 구분 한계 가정 2.5 mm 미달, 단계 수 결정 대기(FACTS S12)
+  # relative_ema 모드용: 분위수 추적 EMA 시간상수(초). 프레임별 정규화 금지.
+  ema_window_s: 3.0
+  # 경로가 모두 far_m 밖일 때 far bound 자동 확장 (실험 조건용)
+  adaptive_far: false
+  adaptive_far_max_m: 15.0
+
+filter:
+  # 비대칭 시간필터. 안전 원칙: 접근(위험)은 빠르게, 후퇴(안전)는 느리게.
+  # 핀이 늦게 올라가면 충돌이지만, 늦게 내려가는 것은 안전하다.
+  ema_alpha_approach: 0.65   # 거리 감소 시 (크면 빠른 추종)
+  ema_alpha_recede: 0.25     # 거리 증가 시
+  hysteresis_up: 0.15        # 레벨 상승 데드밴드 (단계 폭 비율)
+  hysteresis_down: 0.45      # 레벨 하강 데드밴드
+  confirm_frames_up: 1       # 상승은 즉시 반영
+  confirm_frames_down: 3     # 하강은 3프레임 연속 확인 후
+
+hazard:
+  enabled: true
+  # YOLO26n (COCO 80종, TRT FP16 입력 512x288, 2026-10-03 빌드). 이전 YOLOv8n: models/yolov8n.engine
+  # 생성: python tools/build_yolo.py --weights checkpoints/yolo26n.pt --imgsz 512 288
+  engine: models/yolo26n.engine
+  conf: 0.40
+  # COCO 클래스별 위험도 0~3. 3=즉시 위험. 위험도별 진동 진폭으로 매핑됨(jitter_deg).
+  # 미지정 클래스는 0(위험 없음). 문·계단·연석·기둥은 COCO에 없다 → 깊이로만 알린다.
+  danger_levels:
+    person: 2
+    bicycle: 3
+    car: 3
+    motorcycle: 3
+    bus: 3
+    truck: 3
+    train: 3
+    traffic light: 1
+    fire hydrant: 2
+    stop sign: 1
+    bench: 2
+    chair: 2
+    couch: 2
+    potted plant: 1
+    dining table: 2
+    toilet: 1
+    tv: 1
+    laptop: 1
+    refrigerator: 2
+    oven: 2
+    sink: 1
+    bed: 2
+    dog: 2
+    cat: 1
+  # 위험도 1/2/3의 진동 진폭(도) — 2026-10-03 사용자 결정. Pico v3가 핀 갱신 박자의 2·4번째
+  # 1/4 구간에 이만큼 비켜 놓는다(박자의 2배 빈도). SG90 명목 1도 = 2.162 tick → 2/4/6 tick.
+  # 1도(약 10 µs)는 SG90 데드밴드 근처 — 실기에서 실제로 움직이는지 확인할 것.
+  jitter_deg: [1.0, 2.0, 3.0]
+  # 위험 객체가 이 거리보다 멀면 jitter 억제 (원거리 위험은 알림 불필요)
+  max_alert_m: 4.0
+  # 동시 jitter 셀 수 상한 — 전류 보호. 가까운 순으로 자름.
+  max_jitter_cells: 6
+
+# 실내/실외 자동 전환 (2026-10-02 결정). 사용자가 모드를 바꾸지 않는다.
+# Places365 ResNet18 → P(실외) → 판정 → 깊이 모델과 d_far 선택.
+scene:
+  # auto = 자동 전환 | indoor / outdoor = 그 모델과 d_far로 고정(판별 안 함, 실험 기준 조건)
+  # off = 예전 방식(depth.engine 하나 + mapping.far_m). run.py --scene 으로 바꿀 수 있다.
+  mode: auto
+  checkpoint_dir: checkpoints/places365
+  # 장면 판별 횟수/초. 장면은 천천히 바뀌므로 매 프레임 돌리지 않는다.
+  # 2026-10-03 결정: 초당 2회 (판별 1회 약 13~23 ms, 924x504 깊이와 같이 돌 때)
+  rate_hz: 2.0
+  # 판정: P(실외)를 tau_s로 시간 평활 → 실외로 가려면 enter_outdoor 초과,
+  # 실내로 가려면 enter_indoor 미만이 dwell_s 동안 끊기지 않아야 전환 (문턱에서 요동 방지)
+  tau_s: 1.0
+  enter_outdoor: 0.65
+  enter_indoor: 0.35
+  dwell_s: 1.5
+  # 애매할 때(전환 대기 중이거나 평활 P(실외)가 두 문턱 사이):
+  #   both = 두 모델을 모두 돌려 셀마다 더 가까운 값. 틀려도 장애물을 가깝게 알리는 쪽
+  #   hold = 확정된 장면의 모델 하나만 (깊이 연산 1배 유지)
+  # 2026-10-03 결정: hold — 924x504에서 두 모델을 같이 돌리면 프레임이 약 2배로 느려진다
+  uncertain_policy: hold
+  # 장면별 d_far (mapping.far_m 대신). d_near는 mapping.near_m 공통.
+  # d_far는 확정 장면을 따른다(애매 구간에도 바뀌지 않음).
+  far_indoor_m: 4.0
+  far_outdoor_m: 8.0
+  # 전환 시 ln(d_far)를 이 시간 동안 선형 보간 — 핀이 한꺼번에 바뀌지 않게
+  crossfade_s: 0.7
+
+transport:
+  port: /dev/ttyACM0
+  baud: 115200            # USB CDC라 실제로는 무시된다(실효 USB FS)
+  # 핀 갱신 박자(Hz) — 2026-10-03 결정: 초당 5회. Pico 펌웨어 v3가 이 박자마다 그 순간의
+  # 최신 값 하나만 적용하고, 사이사이 2배 빈도(초당 10회)로 위험도 진동을 넣는다.
+  # 기동 시 SET_CONFIG로 Pico에 보내므로 바꿔도 펌웨어를 다시 올릴 필요 없다(0.5~50).
+  pin_rate_hz: 5
+  # 젯슨 → Pico 전송 상한(Hz). 젯슨은 계산 결과가 나올 때마다 보낸다(실측 약 15 Hz).
+  # Pico가 박자에 맞춰 최신 값만 쓰므로 이 값은 과전송 방지용일 뿐. 0 = 제한 없음
+  max_rate_hz: 30
+  # 이 시간(ms) 동안 패킷 없으면 Pico가 전체 홈 복귀 (펌웨어 COMM_TIMEOUT_MS와 같은 값)
+  failsafe_ms: 500
+
+safety:
+  # 동시 이동 서보 수 상한. 벅 컨버터 정격에 맞춤.
+  # SG90 이동 전류 ~250mA 기준: 8개 = 2.0A, 12개 = 3.0A, 24개 = 6.0A
+  # 2026-10-04 사용자 결정: 24개 전부 동시에. 캘리브레이션 때 24개 동시 이동 전류와 PCA9685 전원 단자·배선
+  # 발열을 꼭 측정할 것 (스톨 시 서보 1개 약 0.65 A). 펌웨어는 기동 시 받은 이 값을 쓴다(펌웨어 기본값은 8).
+  max_simultaneous_moves: 24
+  # 기동 시 전체 홈 복귀 후 대기(ms)
+  startup_home_delay_ms: 800
+
+calibration:
+  file: calib/servo_calib.json
+
+runtime:
+  log_level: INFO
+  # 성능 로그 저장 경로 (빈 문자열이면 비활성)
+  metrics_csv: logs/metrics.csv

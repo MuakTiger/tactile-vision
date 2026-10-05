@@ -1,0 +1,9 @@
+# Jetson Orin Nano / JetPack 환경 기준.
+# torch, tensorrt는 NVIDIA 제공 휠을 쓰므로 여기에 버전을 고정하지 않는다.
+# (pip로 재설치하면 CUDA 연동이 깨진다)
+numpy==1.26.4
+opencv-python==4.13.0.88
+pyserial==3.5
+PyYAML==6.0.2
+# 위험도 검출용 (선택 — 없으면 거리 정보만 동작)
+ultralytics==8.4.107

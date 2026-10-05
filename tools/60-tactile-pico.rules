@@ -1,0 +1,6 @@
+# 촉각 장치 Pico (RP2040, USB VID 2e8a) — 2026-10-04 Kiro 추가
+# 로그인한 사용자에게 시리얼 포트(/dev/ttyACM*)와 BOOTSEL 장치 접근을 바로 허용 (dialout 그룹은 다음 로그인부터 적용되므로)
+# ModemManager가 이 포트를 모뎀으로 오인해 건드리지 않게 제외
+# 되돌리기: sudo rm /etc/udev/rules.d/60-tactile-pico.rules && sudo udevadm control --reload-rules
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2e8a", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
+SUBSYSTEM=="usb", ATTR{idVendor}=="2e8a", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"

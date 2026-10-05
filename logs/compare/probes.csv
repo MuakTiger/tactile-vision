@@ -1,0 +1,3 @@
+stamp,source,frame,probe_x,probe_y,indoor_probe_m,outdoor_probe_m,indoor_nearest_m,outdoor_nearest_m,cell_ratio_median_out_over_in,true_m
+20260928_132213_181,camera 0,24,,,,,0.205,4.727,27.645,
+20260928_132213_873,camera 0,34,,,,,0.209,4.719,26.530,

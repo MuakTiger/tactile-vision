@@ -1,0 +1,41 @@
+2026-09-28 12:00:55,337 [WARNING] xFormers not available
+2026-09-28 12:00:55,339 [WARNING] xFormers not available
+2026-09-28 12:00:55,343 [INFO] 모델 로드: depth_anything_v2_metric_vkitti_vits.pth (max_depth=80m)
+2026-09-28 12:00:55,441 [INFO] using MLP layer as FFN
+2026-09-28 12:00:57,909 [INFO] 출력 shape=(1, 280, 504)  범위 4.70~13.41 m  (max_depth 80)
+2026-09-28 12:00:57,926 [INFO] ONNX 내보내기 → /home/june/tactile-vision/models/da2_metric_vkitti_vits_504x280.onnx
+/home/june/tactile-vision/tools/build_engine.py:94: DeprecationWarning: You are using the legacy TorchScript-based ONNX export. Starting in PyTorch 2.9, the new torch.export-based ONNX exporter has become the default. Learn more about the new export logic: https://docs.pytorch.org/docs/stable/onnx_export.html. For exporting control flow: https://pytorch.org/tutorials/beginner/onnx/export_control_flow_model_to_onnx_tutorial.html
+  torch.onnx.export(
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2_layers/patch_embed.py:73: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert H % patch_H == 0, f"Input image height {H} is not a multiple of patch height {patch_H}"
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2_layers/patch_embed.py:74: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert W % patch_W == 0, f"Input image width {W} is not a multiple of patch width: {patch_W}"
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:183: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if npatch == N and w == h:
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:197: TracerWarning: Converting a tensor to a Python float might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  sqrt_N = math.sqrt(N)
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:198: TracerWarning: Converting a tensor to a Python float might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  sx, sy = float(w0) / sqrt_N, float(h0) / sqrt_N
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:207: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert int(w0) == patch_pos_embed.shape[-2]
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:207: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert int(w0) == patch_pos_embed.shape[-2]
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:208: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert int(h0) == patch_pos_embed.shape[-1]
+/home/june/tactile-vision/vendor/depth_anything_v2/dinov2.py:208: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert int(h0) == patch_pos_embed.shape[-1]
+/home/june/tactile-vision/vendor/depth_anything_v2/dpt.py:146: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  out = F.interpolate(out, (int(patch_h * 14), int(patch_w * 14)), mode="bilinear", align_corners=True)
+2026-09-28 12:01:02,216 [INFO] ONNX 완료 (98.9 MB)
+2026-09-28 12:01:04,932 [INFO] ONNX 파싱 중...
+2026-09-28 12:01:06,081 [INFO] FP16 활성화
+2026-09-28 12:01:06,082 [INFO] 입력 input (1, 3, 280, 504) / 출력 depth_m (1, 280, 504)
+2026-09-28 12:01:06,082 [INFO] 엔진 빌드 시작 (수 분 소요)...
+2026-09-28 12:07:05,506 [INFO] 엔진 완료: /home/june/tactile-vision/models/da2_metric_vkitti_vits_504x280.engine (54.2 MB, 359초)
+
+wide: 504×280 (종횡비 1.80) 셀 84×70px, 141,120px
+도메인: outdoor / 출력: da2_metric_vkitti_vits_504x280.engine
+
+
+config/default.yaml 의 depth.engine 을 다음으로 설정:
+  models/da2_metric_vkitti_vits_504x280.engine

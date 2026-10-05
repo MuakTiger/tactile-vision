@@ -1,0 +1,124 @@
+2026-10-03 16:03:48,536 [WARNING] run: 설정: 동시 이동 8개 → 추정 피크 2.0A @5V (10W). 벅 정격 확인 필요
+2026-10-03 16:03:48,537 [WARNING] run: 설정: 입력 종횡비 1.83 ≠ 배열 종횡비 1.25 — 셀이 수평 방향으로 1.47배 넓은 각도를 담당(비등방 매핑)
+2026-10-03 16:03:48,671 [INFO] tactile_vision.camera: 초점: AF off, focus 0
+2026-10-03 16:03:48,673 [INFO] tactile_vision.camera: 카메라 열림: 요청 1280x720@30 → 실제 1280x720@30 (MJPG)
+2026-10-03 16:03:48,673 [INFO] tactile_vision.camera: 크롭 1280x698+0+11 (종횡비 1.834) → 리사이즈 924x504 | 버려지는 화각 3.1%
+2026-10-03 16:03:49,065 [INFO] tactile_vision.depth: 엔진 로드: da2_metric_hypersim_vits_924x504.engine  입력(1, 3, 504, 924) 출력(1, 504, 924)
+/home/june/sensory_substitution/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:422: UserWarning: Found GPU0 Orin which is of compute capability (CC) 8.7.
+The following list shows the CCs this version of PyTorch was built for and the hardware CCs it supports:
+- 8.0 which supports hardware CC >=8.0,<9.0 except {8.7}
+- 9.0 which supports hardware CC >=9.0,<10.0
+- 10.0 which supports hardware CC >=10.0,<11.0 except {10.1}
+- 11.0 which supports hardware CC >=11.0,<12.0
+- 12.0 which supports hardware CC >=12.0,<13.0
+No published PyTorch CUDA builds for release 2.13.0+cu132 support this GPU. Visit https://pytorch.org/get-started/locally/ to find a compatible release.
+  _warn_unsupported_code(d, device_cc, code_ccs)
+2026-10-03 16:03:49,076 [INFO] tactile_vision.depth: 셀 풀링: 154x126 px/셀, percentile 10% → k=1940
+[10/03/2026-16:03:49] [TRT] [W] WARNING The logger passed into createInferRuntime differs from one already registered for an existing builder, runtime, or refitter. So the current new logger is ignored, and TensorRT will use the existing one which is returned by nvinfer1::getLogger() instead.
+2026-10-03 16:03:49,294 [INFO] tactile_vision.depth: 엔진 로드: da2_metric_vkitti_vits_924x504.engine  입력(1, 3, 504, 924) 출력(1, 504, 924)
+2026-10-03 16:03:49,295 [INFO] tactile_vision.depth: 셀 풀링: 154x126 px/셀, percentile 10% → k=1940
+2026-10-03 16:03:49,904 [INFO] tactile_vision.scene: 장면 판별기 로드: resnet18_places365.pth.tar (fp16, 실내 161 / 실외 204 장면)
+2026-10-03 16:03:49,906 [INFO] tactile_vision.pipeline: 장면 자동 전환: Places365 초당 2회, 평활 1s, 실외 > 0.65 / 실내 < 0.35, 체류 1.5s, 애매하면 확정 장면 모델 유지 | d_far 실내 4.0m / 실외 8.0m, 전환 시 0.7s 로그 보간
+── 하드웨어 실측 요약 ──
+그리드            6×4 = 24셀
+셀 피치           가로 30.0mm / 세로 40.0mm
+배열 스팬         150.0×120.0mm (종횡비 1.25)
+피니언            12톱니, 모듈 1.3333, 피치원 16.00mm
+변환              0.139626 mm/° (50.265 mm/회전)
+랙 길이           55.86mm
+PWM               50Hz, 1tick = 4.8828µs, 500~2400µs = tick 102~492
+기본 스트로크     스트로크 20.9mm / 8단계 = 간격 2.99mm (각도 150°, 레벨0=0mm → 레벨7=20.9mm) [OK]
+이론 최대 단계    9단계 (JND 2.5mm 기준)
+핀 최대이동 시간  417ms (전체 스트로크)
+
+모델 입력 후보:
+  faithful: 420×336 (종횡비 1.25) 셀 70×84px, 141,120px
+  wide: 504×280 (종횡비 1.80) 셀 84×70px, 141,120px
+  wide_hi: 924×504 (종횡비 1.83) 셀 154×126px, 465,696px
+
+Loading /home/june/tactile-vision/models/yolo26n.engine for TensorRT inference...
+[10/03/2026-16:03:50] [TRT] [W] WARNING The logger passed into createInferRuntime differs from one already registered for an existing builder, runtime, or refitter. So the current new logger is ignored, and TensorRT will use the existing one which is returned by nvinfer1::getLogger() instead.
+[10/03/2026-16:03:50] [TRT] [I] Loaded engine size: 7 MiB
+[10/03/2026-16:03:50] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +1, GPU +4, now: CPU 1, GPU 245 (MiB)
+2026-10-03 16:03:51,009 [INFO] tactile_vision.hazard: 모델에 없는 클래스 2개 무시: door, stairs
+2026-10-03 16:03:51,009 [INFO] tactile_vision.hazard: 위험도 검출 활성: yolo26n.engine (80클래스 중 24개에 위험도 지정)
+2026-10-03 16:03:51,018 [INFO] tactile_vision.calibration: 캘리브레이션 로드: servo_calib.json (생성 2026-09-22T23:02:03)
+2026-10-03 16:03:51,018 [INFO] tactile_vision.pipeline: 계측 로그: /tmp/tv_hi_metrics.csv
+2026-10-03 16:03:51,019 [INFO] run: 예열 중 (깊이 실내·실외 + 장면 판별 + 위험도 엔진)...
+2026-10-03 16:03:51,829 [INFO] tactile_vision.depth: 예열 완료: 평균 추론 49.4ms (20.3 fps 상당)
+2026-10-03 16:03:52,481 [INFO] tactile_vision.depth: 예열 완료: 평균 추론 49.2ms (20.3 fps 상당)
+2026-10-03 16:03:53,151 [INFO] tactile_vision.scene: 장면 판별기 예열: 평균 9.9ms
+Loading /home/june/tactile-vision/models/yolo26n.engine for TensorRT inference...
+[10/03/2026-16:03:53] [TRT] [W] WARNING The logger passed into createInferRuntime differs from one already registered for an existing builder, runtime, or refitter. So the current new logger is ignored, and TensorRT will use the existing one which is returned by nvinfer1::getLogger() instead.
+[10/03/2026-16:03:53] [TRT] [I] Loaded engine size: 7 MiB
+[10/03/2026-16:03:53] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +1, GPU +4, now: CPU 1, GPU 245 (MiB)
+2026-10-03 16:03:53,491 [INFO] tactile_vision.hazard: 위험도 검출 예열 완료: 평균 14.5ms
+2026-10-03 16:03:53,492 [INFO] tactile_vision.pipeline: 예열 완료: 깊이 실내 49.4ms / 실외 49.2ms, 장면 판별 9.9ms(초당 2회) + 위험도 14.5ms → 모델 1개 프레임 약 63.9ms (15.7 fps 상당)
+2026-10-03 16:03:53,493 [INFO] run: 매핑:
+[실내] 매핑 log  0.5~4.0m  8단계  단계당 2.99mm
+  레벨 7   0.50~ 0.65m  폭 0.15m  핀  20.9mm
+  레벨 6   0.65~ 0.84m  폭 0.19m  핀  17.9mm
+  레벨 5   0.84~ 1.09m  폭 0.25m  핀  14.9mm
+  레벨 4   1.09~ 1.41m  폭 0.32m  핀  11.9mm
+  레벨 3   1.41~ 1.83m  폭 0.42m  핀   9.0mm
+  레벨 2   1.83~ 2.38m  폭 0.54m  핀   6.0mm
+  레벨 1   2.38~ 3.08m  폭 0.71m  핀   3.0mm
+  레벨 0   3.08~ 4.00m  폭 0.92m  핀   0.0mm
+[실외] 매핑 log  0.5~8.0m  8단계  단계당 2.99mm
+  레벨 7   0.50~ 0.71m  폭 0.21m  핀  20.9mm
+  레벨 6   0.71~ 1.00m  폭 0.29m  핀  17.9mm
+  레벨 5   1.00~ 1.41m  폭 0.41m  핀  14.9mm
+  레벨 4   1.41~ 2.00m  폭 0.59m  핀  11.9mm
+  레벨 3   2.00~ 2.83m  폭 0.83m  핀   9.0mm
+  레벨 2   2.83~ 4.00m  폭 1.17m  핀   6.0mm
+  레벨 1   4.00~ 5.66m  폭 1.66m  핀   3.0mm
+  레벨 0   5.66~ 8.00m  폭 2.34m  핀   0.0mm
+2026-10-03 16:03:53,493 [INFO] run: 시작 — 종료는 Ctrl+C
+2026-10-03 16:03:53,508 [INFO] tactile_vision.switching: 장면 첫 판정: 실내 (P(실외) 0.00, 1위 dorm_room)
+2026-10-03 16:03:55,499 [INFO] run: 16.6 fps  지연 60ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:03:57,517 [INFO] run: 13.8 fps  지연 73ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:03:59,520 [INFO] run: 16.7 fps  지연 60ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:01,536 [INFO] run: 15.6 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:03,605 [INFO] run: 13.7 fps  지연 73ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:05,646 [INFO] run: 12.2 fps  지연 82ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:07,670 [INFO] run: 15.1 fps  지연 66ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:09,711 [INFO] run: 15.8 fps  지연 63ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:11,734 [INFO] run: 15.6 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:13,764 [INFO] run: 16.0 fps  지연 62ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:15,800 [INFO] run: 17.4 fps  지연 58ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:17,870 [INFO] run: 14.0 fps  지연 71ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:19,882 [INFO] run: 16.0 fps  지연 63ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:21,914 [INFO] run: 15.8 fps  지연 63ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:23,946 [INFO] run: 15.4 fps  지연 65ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:25,996 [INFO] run: 15.5 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:28,035 [INFO] run: 16.6 fps  지연 60ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:30,036 [INFO] run: 15.8 fps  지연 63ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:32,061 [INFO] run: 17.1 fps  지연 58ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:34,144 [INFO] run: 11.6 fps  지연 86ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:36,170 [INFO] run: 15.5 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:38,213 [INFO] run: 17.5 fps  지연 57ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:40,229 [INFO] run: 17.6 fps  지연 57ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:42,286 [INFO] run: 15.5 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:44,289 [INFO] run: 16.7 fps  지연 60ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:46,338 [INFO] run: 15.6 fps  지연 64ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:48,347 [INFO] run: 17.5 fps  지연 57ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:50,352 [INFO] run: 16.9 fps  지연 59ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:52,377 [INFO] run: 16.8 fps  지연 59ms  레벨[222112 | 222112 | 222127 | 322337]  전송 0  장면 실내 P(실외) 0% 모델 실내 d_far 4.0m
+2026-10-03 16:04:53,543 [INFO] run: 지정 시간 경과 — 종료
+2026-10-03 16:04:53,546 [INFO] tactile_vision.pipeline: 파이프라인 통계:
+프레임 918 / 전송 0 / 60.1초
+  FPS        평균 15.8  p50 15.7  p5 12.3
+  깊이추론   평균 47.4ms  p95 55.9ms
+  전체지연   평균 64.2ms  p95 81.1ms
+  프레임나이 평균 31.3ms  p95 47.2ms
+  서보이동   0.0회/분/서보
+  장면       실내 100% / 실외 0% / 두 모델 0%  전환 0회  판별 평균 21.0ms
+2026-10-03 16:04:53,609 [INFO] tactile_vision.camera: 카메라 종료: 캡처 1935 / 폐기 1016 / 읽기실패 0
+
+프레임 918 / 전송 0 / 60.1초
+  FPS        평균 15.8  p50 15.7  p5 12.3
+  깊이추론   평균 47.4ms  p95 55.9ms
+  전체지연   평균 64.2ms  p95 81.1ms
+  프레임나이 평균 31.3ms  p95 47.2ms
+  서보이동   0.0회/분/서보
+  장면       실내 100% / 실외 0% / 두 모델 0%  전환 0회  판별 평균 21.0ms

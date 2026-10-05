@@ -1,0 +1,17 @@
+Downloading packages...
+arduino:arduinoOTA@1.3.0 0 B / 2.36 MiB    0.00%arduino:arduinoOTA@1.3.0 downloaded
+arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 0 B / 36.28 MiB    0.00%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 0 B / 36.28 MiB    0.00%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 3.57 MiB / 36.28 MiB    9.84% 00m03sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 6.20 MiB / 36.28 MiB   17.10% 00m02sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 8.93 MiB / 36.28 MiB   24.60% 00m02sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 12.37 MiB / 36.28 MiB   34.09% 00m01sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 12.37 MiB / 36.28 MiB   34.09% 00m01sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 16.06 MiB / 36.28 MiB   44.25% 00m01sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 19.13 MiB / 36.28 MiB   52.73% 00m01sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 22.12 MiB / 36.28 MiB   60.95% 00m01sarduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 22.12 MiB / 36.28 MiB   60.95%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 25.61 MiB / 36.28 MiB   70.57%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 29.21 MiB / 36.28 MiB   80.52%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 32.53 MiB / 36.28 MiB   89.66%arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 downloaded
+arduino:avrdude@8.0.0-arduino1 0 B / 1.49 MiB    0.00%arduino:avrdude@8.0.0-arduino1 downloaded
+arduino:avr@1.8.8 0 B / 6.83 MiB    0.00%arduino:avr@1.8.8 0 B / 6.83 MiB    0.00%arduino:avr@1.8.8 downloaded
+Installing arduino:arduinoOTA@1.3.0...
+Skipping tool configuration....
+arduino:arduinoOTA@1.3.0 installed
+Installing arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7...
+Skipping tool configuration....
+arduino:avr-gcc@7.3.0-atmel3.6.1-arduino7 installed
+Installing arduino:avrdude@8.0.0-arduino1...
+Skipping tool configuration....
+arduino:avrdude@8.0.0-arduino1 installed
+Installing platform arduino:avr@1.8.8...
+Skipping platform configuration....
+Platform arduino:avr@1.8.8 installed

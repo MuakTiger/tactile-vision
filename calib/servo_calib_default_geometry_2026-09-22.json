@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "created": "2026-09-22T23:02:03",
+  "levels": 8,
+  "notes": "기하 계산 기반 초기값 (미측정). tools/calibrate_pins.py 로 채널별 실측 후 교체할 것.",
+  "channels": [
+    {
+      "ch": 0,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 1,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 2,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 3,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 4,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 5,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 6,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 7,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 8,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 9,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 10,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 11,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 12,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 13,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 14,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 15,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 16,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 17,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 18,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 19,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 20,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 21,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 22,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    },
+    {
+      "ch": 23,
+      "home_tick": 124,
+      "max_tick": 448,
+      "note": "미측정"
+    }
+  ],
+  "_derived": {
+    "mm_per_deg": 0.139626,
+    "tick_us": 4.8828,
+    "span_mm_per_channel": [
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93,
+      20.93
+    ]
+  }
+}

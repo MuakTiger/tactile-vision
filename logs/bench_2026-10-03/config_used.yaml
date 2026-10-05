@@ -1,0 +1,94 @@
+camera:
+  device: 0
+  width: 1280
+  height: 720
+  fps: 30
+  fourcc: MJPG
+  flip_horizontal: false
+  queue_size: 1
+  autofocus: false
+  focus: 0
+depth:
+  engine: models/da2_metric_hypersim_vits_924x504.engine
+  outdoor_engine: models/da2_metric_vkitti_vits_924x504.engine
+  input_spec: wide_hi
+  max_depth_m: 20.0
+  metric: true
+grid:
+  reducer: percentile
+  percentile: 10.0
+  cell_margin: 0.0
+mapping:
+  mode: log
+  near_m: 0.5
+  far_m: 8.0
+  levels: 8
+  stroke_mm: 20.9
+  ema_window_s: 3.0
+  adaptive_far: false
+  adaptive_far_max_m: 15.0
+filter:
+  ema_alpha_approach: 0.65
+  ema_alpha_recede: 0.25
+  hysteresis_up: 0.15
+  hysteresis_down: 0.45
+  confirm_frames_up: 1
+  confirm_frames_down: 3
+hazard:
+  enabled: true
+  engine: models/yolo26n.engine
+  conf: 0.4
+  danger_levels:
+    person: 2
+    bicycle: 3
+    car: 3
+    motorcycle: 3
+    bus: 3
+    truck: 3
+    train: 3
+    traffic light: 1
+    fire hydrant: 2
+    stop sign: 1
+    bench: 2
+    chair: 2
+    couch: 2
+    potted plant: 1
+    dining table: 2
+    toilet: 1
+    tv: 1
+    laptop: 1
+    refrigerator: 2
+    oven: 2
+    sink: 1
+    bed: 2
+    door: 2
+    stairs: 3
+    dog: 2
+    cat: 1
+  max_alert_m: 4.0
+  max_jitter_cells: 6
+scene:
+  mode: auto
+  checkpoint_dir: checkpoints/places365
+  rate_hz: 2.0
+  tau_s: 1.0
+  enter_outdoor: 0.65
+  enter_indoor: 0.35
+  dwell_s: 1.5
+  uncertain_policy: hold
+  far_indoor_m: 4.0
+  far_outdoor_m: 8.0
+  crossfade_s: 0.7
+transport:
+  port: /dev/ttyACM0
+  baud: 115200
+  max_rate_hz: 15
+  failsafe_ms: 500
+safety:
+  max_simultaneous_moves: 8
+  startup_home_delay_ms: 800
+calibration:
+  file: calib/servo_calib.json
+runtime:
+  log_level: INFO
+  metrics_csv: /tmp/tv_hi_metrics.csv
