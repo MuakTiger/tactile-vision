@@ -275,5 +275,11 @@ docs/experiment_design.md      논문 실험 설계
 - 진동은 초당 10회(박자의 2배), 진폭 1/2/3도 — 촉각 최적 대역(20~50 Hz)보다 느리고, 1도는 SG90
   데드밴드(약 10 µs, 데이터시트 명목) 근처라 실제로 움직이지 않을 수 있다 (실기 미확인)
 - 1단계 변화 종단 지연 평균 약 0.26 s, 전체 스트로크 약 0.6 s *(산정치)* → 빠른 보행에서 부족할 수 있음
-- 펌웨어 v3는 PC 시뮬레이션(`tools/test_firmware.py`)과 컴파일만 확인 — Pico 실기 미검증
+- 펌웨어 v3는 PC 시뮬레이션(`tools/test_firmware.py`)과 실기(2026-10-05, 카메라 → Pico → 24핀 실전 구동)에서 확인.
+  1도 진동이 실제로 움직이는지, 24개 동시 구동 시 전류는 아직 측정하지 않았다
 - 단안 metric 깊이의 절대 정확도를 RGB-D 기준으로 검증하지 않았음
+
+## 라이선스
+
+MIT (`LICENSE`). 단, `vendor/depth_anything_v2/`는 원본 Depth-Anything-V2의 Apache-2.0
+(`vendor/depth_anything_v2/LICENSE`)을 따른다. 모델 가중치는 저장소에 없으며 각 배포처의 라이선스를 따른다.
