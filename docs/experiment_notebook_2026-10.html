@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>촉각비전 실험 노트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: field notebook — one 760px column, sticky day chips with a progress line, each day a numbered procedure with checkboxes; measuring-tape strips carry the completion criteria */
+:root {
+  --paper: #F2F4F7;
+  --panel: #FFFFFF;
+  --ink: #17202A;
+  --muted: #586373;
+  --rule: #D3DAE3;
+  --code-bg: #E8ECF1;
+  --tape: #FFD43B;
+  --tape-ink: #1D1A10;
+  --tape-tick: rgba(29, 26, 16, 0.55);
+  --signal: #1D5BC4;
+  --warn: #A64B08;
+  --warn-bg: #FCEFE2;
+  --ok: #1C7A4B;
+  --font-display: "Gothic A1", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #101317;
+    --panel: #171B21;
+    --ink: #E4E8EE;
+    --muted: #98A3B2;
+    --rule: #2A313B;
+    --code-bg: #0B0E12;
+    --tape: #E8BF2E;
+    --tape-ink: #16140B;
+    --tape-tick: rgba(22, 20, 11, 0.6);
+    --signal: #84AAF2;
+    --warn: #F0A15A;
+    --warn-bg: #2A1D12;
+    --ok: #5DC88F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #101317;
+  --panel: #171B21;
+  --ink: #E4E8EE;
+  --muted: #98A3B2;
+  --rule: #2A313B;
+  --code-bg: #0B0E12;
+  --tape: #E8BF2E;
+  --tape-ink: #16140B;
+  --tape-tick: rgba(22, 20, 11, 0.6);
+  --signal: #84AAF2;
+  --warn: #F0A15A;
+  --warn-bg: #2A1D12;
+  --ok: #5DC88F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+.wrap { max-width: 760px; margin-inline: auto; }
+a { color: var(--signal); }
+b { font-weight: 600; }
+code, kbd { font-family: var(--font-mono); font-size: 0.88em; }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* header */
+.top { padding-block: 28px 16px; display: grid; gap: 8px; }
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.eyebrow .count { margin-left: auto; color: var(--ink); }
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(27px, 6.5vw, 36px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.intro { margin: 0; color: var(--muted); max-width: 62ch; }
+
+/* sticky nav */
+.days {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  padding-block: 10px;
+  display: grid;
+  gap: 8px;
+}
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chips a {
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.progress { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.progress b { color: var(--ink); font-weight: 600; }
+.track { flex: 1; height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--signal); transition: width 0.2s ease; }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+/* sections */
+section {
+  padding-block: 30px 22px;
+  border-bottom: 1px solid var(--rule);
+  scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 96px);
+  display: grid;
+  gap: 14px;
+}
+section > * { min-width: 0; }
+.day-head { display: grid; gap: 6px; }
+h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 23px;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+h2 .sub { font-family: var(--font-body); font-weight: 500; font-size: 15px; color: var(--muted); margin-left: 4px; }
+h3 { margin: 8px 0 0; font-size: 16.5px; font-weight: 600; text-wrap: balance; }
+p { margin: 0; }
+.lede { max-width: 62ch; }
+.note { color: var(--muted); font-size: 14.5px; }
+
+/* measuring-tape strip */
+.tape {
+  position: relative;
+  background: var(--tape);
+  color: var(--tape-ink);
+  border-radius: 3px;
+  padding: 17px 14px 11px;
+  display: grid;
+  gap: 2px;
+}
+.tape::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(90deg, var(--tape-tick) 0 1px, transparent 1px 50px) top left / 100% 10px no-repeat,
+    repeating-linear-gradient(90deg, var(--tape-tick) 0 1px, transparent 1px 10px) top left / 100% 5px no-repeat;
+}
+.tape .k { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; }
+.tape .v { font-weight: 500; }
+
+/* checklists */
+ul.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+ul.checks label {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 7px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+input[type="checkbox"] { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--signal); cursor: pointer; }
+ul.checks label:has(input:checked) .txt { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
+
+/* numbered steps */
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; counter-reset: step; }
+ol.steps > li { counter-increment: step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 6px 8px; }
+ol.steps > li::before {
+  content: counter(step);
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  padding-top: 2px;
+}
+ol.steps > li > * { grid-column: 2; min-width: 0; }
+.step-title { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; cursor: pointer; }
+.step-title input { flex: 0 0 auto; }
+.step-title:has(input:checked) span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
+.step-body { display: grid; gap: 8px; }
+
+/* commands */
+.cmd {
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+.cmd pre {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+.cmd code { font-size: inherit; }
+.copy {
+  margin: 6px;
+  font: 500 12px var(--font-body);
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  text-align: center;
+  padding: 0 5px;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--panel);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* caution */
+.caution {
+  position: relative;
+  overflow: hidden;
+  background: var(--warn-bg);
+  border-radius: 6px;
+  padding: 16px 14px 13px;
+  display: grid;
+  gap: 6px;
+}
+.caution::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: repeating-linear-gradient(135deg, var(--warn) 0 9px, transparent 9px 18px);
+}
+.caution h4 { margin: 0; font-size: 14px; color: var(--warn); }
+.caution ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; }
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+tbody tr:last-child > * { border-bottom: 0; }
+thead th { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+td small { color: var(--muted); }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+tr.block td { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); background: var(--code-bg); padding-block: 5px; }
+table.grid td, table.grid thead th:not(:first-child) { text-align: center; }
+table.grid tbody th { font-weight: 500; white-space: nowrap; }
+table.grid tbody th code { color: var(--muted); margin-left: 4px; }
+.cond {
+  display: inline-block;
+  min-width: 3.2em;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--muted);
+  margin-right: 6px;
+}
+.cond.d { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.cond.cd { background: var(--tape); color: var(--tape-ink); border-color: var(--tape); }
+
+/* rules list */
+ul.rules { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 64ch; }
+ul.rules.quiet { color: var(--muted); }
+
+/* cell map */
+.cellmap { margin: 0; display: grid; gap: 8px; }
+.hands { display: flex; flex-wrap: wrap; gap: 16px; }
+.hand { display: grid; gap: 4px; }
+.hand-label { font-size: 12px; color: var(--muted); }
+.cells { display: grid; grid-template-columns: repeat(3, 40px); gap: 4px; }
+.cells span {
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.cells span.hit { background: var(--tape); color: var(--tape-ink); border-color: var(--tape); font-weight: 600; }
+.cellmap figcaption { font-size: 14px; color: var(--muted); max-width: 62ch; }
+
+/* two-up blocks */
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.pair > div { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+
+/* key list */
+dl.keys { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 12px; align-items: baseline; font-size: 14.5px; }
+dl.keys dt { white-space: nowrap; }
+dl.keys dd { margin: 0; }
+
+/* course diagrams */
+.courses { display: grid; gap: 12px; }
+.course { margin: 0; display: grid; gap: 2px; }
+.course figcaption { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.course svg { width: 100%; height: auto; display: block; }
+.course .floor { fill: var(--panel); }
+.course .wall { stroke: var(--muted); stroke-width: 5; }
+.course .mark { stroke: var(--rule); stroke-width: 3; stroke-dasharray: 8 10; }
+.course .start { stroke: var(--ok); stroke-width: 8; }
+.course .finish { stroke: var(--warn); stroke-width: 8; }
+.course .ticks line { stroke: var(--muted); stroke-width: 2; }
+.course text { font-family: var(--font-body); fill: var(--muted); font-size: 26px; }
+.course text.lab { fill: var(--ink); font-size: 30px; font-weight: 600; }
+.course text.end { fill: var(--ink); font-weight: 600; }
+.course .ob { fill: var(--ink); }
+.course .chair { fill: var(--muted); }
+.course .hang { fill: var(--tape); stroke: var(--tape-ink); stroke-width: 3; stroke-dasharray: 6 5; }
+
+ol.plain { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
+
+.foot { padding-block: 22px 0; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; color: var(--muted); font-size: 13px; }
+#clear-checks {
+  font: 500 13px var(--font-body);
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">졸업논문 실험 · 10/15(목) ~ 10/17(토) · 제출 10/20(화)</p>
+    <h1>촉각비전 실험 노트</h1>
+    <p class="intro">반응 시간, 거리, 핀 영점, 보행 실험의 준비물·절차·명령어·기록 형식을 날짜 순서로 모았어요. 체크 표시는 이 기기의 브라우저에만 남아요.</p>
+  </header>
+
+  <nav class="days" aria-label="날짜별 이동">
+    <div class="chips">
+      <a href="#plan">일정</a>
+      <a href="#thu-day">목 낮 · 준비</a>
+      <a href="#latency">목 밤 · 반응 시간</a>
+      <a href="#distance">금 오후 · 거리</a>
+      <a href="#pins">금 저녁 · 핀 영점</a>
+      <a href="#walk">토 · 보행</a>
+      <a href="#records">기록 규칙</a>
+    </div>
+    <div class="progress"><span>완료 <b id="done-count">0</b>/<span id="total-count">0</span></span><div class="track"><div class="fill" id="progress-bar"></div></div></div>
+  </nav>
+
+  <main>
+    <!-- 일정 -->
+    <section id="plan">
+      <h2>일정</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>언제</th><th>할 일</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td>목 낮</td><td>교수님 메일, 토요일 보조자·장소, 주문·구입</td><td>메일 발송, 보조자 확정</td></tr>
+            <tr><td>목 20:00~</td><td>반응 시간</td><td>슬로모션 원본 3개(30회), 로그 사본</td></tr>
+            <tr><td>금 오후<br><small>17:30 전</small></td><td>거리 (실내·실외)</td><td>실내·실외 각 6거리 사진</td></tr>
+            <tr><td>금 저녁</td><td>핀 영점, 토요일 준비</td><td>기록 240줄, 보정 파일 저장, SSH 연습</td></tr>
+            <tr><td>토</td><td>정지 감지, 보행 18회</td><td>정지 로그 20개, 기록표 18줄</td></tr>
+            <tr><td>일~화</td><td>분석·작성</td><td>10/20 제출</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>설정은 그대로 둬요.</b> 토요일까지 바꾸는 건 핀 보정 파일 하나뿐이에요. 단계 수·필터·거리 범위는 손대지 않아요.</li>
+        <li><b>원본은 지우지 않아요.</b> 영상·사진·로그는 날짜별 폴더에 그대로 둬요.</li>
+        <li><b>눈을 가리고 걸을 때는 보조자가 꼭 옆에 있어야 해요.</b></li>
+      </ul>
+    </section>
+
+    <!-- 목 낮 -->
+    <section id="thu-day">
+      <div class="day-head">
+        <p class="eyebrow"><span>목 낮 · 수업 중과 하교길</span><span class="count" data-section-count></span></p>
+        <h2>연락과 준비물</h2>
+      </div>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="d0-mail" data-track><span class="txt"><b>지도교수님께 확인 메일 보내기</b> — 1인 보행 실험의 IRB 처리, 양식 1번의 분량·제출 형식</span></label></li>
+        <li><label><input type="checkbox" id="d0-helper" data-track><span class="txt"><b>토요일 보조자 1명 확정</b> — 시간과 장소까지</span></label></li>
+        <li><label><input type="checkbox" id="d0-place" data-track><span class="txt"><b>토요일 복도 확정</b> — 10 m × 2.4 m 안팎, 계단·문턱 없는 곳, 사용 허락</span></label></li>
+        <li><label><input type="checkbox" id="d0-caliper" data-track><span class="txt"><b>디지털 캘리퍼스 주문</b> — 금속 몸체, 0.01 mm 표시, 깊이 막대가 있는 것. 금요일 저녁 전에 받을 수 있게</span></label></li>
+        <li><label><input type="checkbox" id="d0-cane" data-track><span class="txt"><b>접이식 흰지팡이 주문</b> — 토요일 전에 못 받으면 곧은 막대(명치 높이, 약 120~130 cm)로 대신하고 그렇게 적어요</span></label></li>
+        <li><label><input type="checkbox" id="d0-tape" data-track><span class="txt"><b>줄자</b> 5 m 이상</span></label></li>
+        <li><label><input type="checkbox" id="d0-board" data-track><span class="txt"><b>골판지</b> 큰 것 여러 장, <b>빈 상자</b> 높이 45 cm 안팎</span></label></li>
+        <li><label><input type="checkbox" id="d0-misc" data-track><span class="txt">검은 종이나 검은 매직, 마스킹테이프, 끈, 수면 안대</span></label></li>
+      </ul>
+    </section>
+
+    <!-- 목 밤: 반응 시간 -->
+    <section id="latency">
+      <div class="day-head">
+        <p class="eyebrow"><span>목 20:00~ · 집 · 혼자</span><span class="count" data-section-count></span></p>
+        <h2>반응 시간 <span class="sub">엔드투엔드</span></h2>
+        <p class="lede">판이 카메라 앞에 나타나거나 사라진 뒤, 핀이 움직이기 시작하기까지와 목표 높이에 닿기까지 걸린 시간을 240 fps 영상으로 잽니다.</p>
+      </div>
+      <div class="tape"><span class="k">완료 기준</span><span class="v">슬로모션 원본 3개(10회씩, 모두 30회), 로그 사본 1개, 메모(벽까지 거리, 시작 단계)</span></div>
+
+      <h3>준비물</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="t1-p1" data-track><span class="txt">장치 일체 — LiPo 2개와 보조배터리 충전</span></label></li>
+        <li><label><input type="checkbox" id="t1-p2" data-track><span class="txt">검은 판 40×60 cm와 끈 — 골판지에 검은 종이를 붙이거나 매직으로 칠해요</span></label></li>
+        <li><label><input type="checkbox" id="t1-p3" data-track><span class="txt">아이폰(슬로모션 240 fps)과 폰 거치대</span></label></li>
+        <li><label><input type="checkbox" id="t1-p4" data-track><span class="txt">30 cm 자, 기준선을 표시할 막대, 마스킹테이프</span></label></li>
+      </ul>
+
+      <figure class="cellmap">
+        <div class="hands">
+          <div class="hand">
+            <p class="hand-label">왼손</p>
+            <div class="cells"><span>0</span><span>1</span><span>2</span><span>6</span><span>7</span><span>8</span><span>12</span><span>13</span><span>14</span><span>18</span><span>19</span><span>20</span></div>
+          </div>
+          <div class="hand">
+            <p class="hand-label">오른손</p>
+            <div class="cells"><span>3</span><span>4</span><span>5</span><span class="hit">9</span><span>10</span><span>11</span><span>15</span><span>16</span><span>17</span><span>21</span><span>22</span><span>23</span></div>
+          </div>
+        </div>
+        <figcaption>장치 화면의 24칸. 재는 핀은 칸 9예요. 화면에서 위로부터 둘째 줄, 왼쪽부터 넷째 칸(오른손 첫 열)이에요. 0.5 m 앞에서 이 칸의 위쪽 경계는 렌즈보다 약 9 cm 높아요.</figcaption>
+      </figure>
+
+      <h3>절차</h3>
+      <ol class="steps">
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s1" data-track><span>장치 점검</span></label>
+          <div class="step-body">
+            <p>시험 다섯 묶음이 모두 통과하고 핀이 한 번 오르내리면 돼요. 마지막 줄(코드 버전)은 메모해요.</p>
+            <div class="cmd"><pre><code>cd ~/tactile-vision
+PY=~/sensory_substitution/venv/bin/python
+for t in tools/test_mapping.py tools/test_protocol.py tools/test_scene.py tools/test_switch.py tools/test_firmware.py; do $PY -B $t | tail -1; done
+$PY -B tools/servo_updown_test.py --cycles 1
+git log -1 --format='%h %ad %s' --date=short</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s2" data-track><span>장치와 판 놓기</span></label>
+          <div class="step-body">
+            <p>장치를 책상에 고정하고 카메라가 먼 벽을 보게 해요. 벽까지 4 m 이상이면 가운데 칸이 단계 0에서 시작해요. 더 가까우면 시작 단계만 메모하면 돼요.</p>
+            <p>판은 끈에 매달아, 떨어뜨리면 렌즈 앞 0.5 m에서 화면 가운데를 가리고 멈추게 끈 길이를 맞춰요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s3" data-track><span>0 ms 기준선 표시</span></label>
+          <div class="step-body">
+            <p>판이 지나가는 옆에 막대를 세우고 렌즈 높이 + 9 cm에 테이프를 붙여요. 판 아래 끝이 이 선을 지나는 프레임이 0 ms예요. 내릴 때와 올릴 때 같은 선을 써요. 막대는 장치 카메라 화면 밖에 둬요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s4" data-track><span>폰 놓기</span></label>
+          <div class="step-body">
+            <p>슬로모션(240 fps)으로 두고, 패드 뒤 위쪽에서 패드 너머로 판이 보이게 고정해요. 칸 9 핀이 크게 보이고 판 아래 끝과 기준선이 같은 화면에 들어오면 돼요. 핀 옆에 자를 세우고 조명은 밝게 해요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s5" data-track><span>장치 실행 (확인 화면 없이)</span></label>
+          <div class="step-body">
+            <p>핀이 움직여요. 손을 패드에서 떼세요.</p>
+            <div class="cmd"><pre><code>$PY -B run.py</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s6" data-track><span>녹화 1 — 10회</span></label>
+          <div class="step-body">
+            <p>녹화 시작 → [판 내리기 → 3초 → 판 올리기 → 5초] × 10 → 녹화 정지</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s7" data-track><span>녹화 2 — 10회</span></label>
+          <div class="step-body"><p>같은 방법으로 10회.</p></div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s8" data-track><span>녹화 3 — 10회</span></label>
+          <div class="step-body"><p>같은 방법으로 10회.</p></div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s9" data-track><span>끄고 로그 복사</span></label>
+          <div class="step-body">
+            <p>터미널에서 Ctrl+C를 누르면 핀이 천천히 내려가요. 그다음 로그를 다른 이름으로 복사해요.</p>
+            <div class="cmd"><pre><code>cp logs/metrics.csv logs/metrics_$(date +%m%d_%H%M)_latency.csv</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="t1-s10" data-track><span>영상 원본 옮기기, 메모</span></label>
+          <div class="step-body">
+            <p>케이블로 아이폰의 원본 파일(DCIM 폴더)을 그대로 복사해요. 일반 속도로 변환된 파일은 쓰지 않아요.</p>
+            <p>메모: 벽까지 거리, 시작 단계, 설정은 '보정 전(24칸 372/232)'.</p>
+          </div>
+        </li>
+      </ol>
+
+      <aside class="caution">
+        <h4>주의</h4>
+        <ul>
+          <li>확인 화면(<code>--debug</code>)을 켜면 초당 9.4프레임으로 느려져요. 이 실험은 화면 없이 해요.</li>
+          <li><code>run.py</code>는 실행할 때마다 <code>logs/metrics.csv</code>를 새로 써요. 끝나면 바로 복사해요.</li>
+          <li>핀 영점 보정 전에 재도 괜찮아요. 영점과 최대를 같은 만큼 옮기는 보정이라 움직이는 시간은 그대로예요.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <!-- 금 오후: 거리 -->
+    <section id="distance">
+      <div class="day-head">
+        <p class="eyebrow"><span>금 오후 · 해 지기 전(17:30까지) · 혼자 가능</span><span class="count" data-section-count></span></p>
+        <h2>거리 정확도</h2>
+        <p class="lede">장치 카메라로 찍은 사진에서 모델이 추정한 거리를, 줄자로 잰 실제 거리와 비교합니다. 같은 사진에 실내·실외 모델을 둘 다 돌려 모델별 배율을 구해요. 분석은 사진만 있으면 나중에 할 수 있어요.</p>
+      </div>
+      <div class="tape"><span class="k">완료 기준</span><span class="v">실내 6거리 + 실외 6거리, 거리마다 숫자 종이 1장 + 판 3장 (모두 48장)</span></div>
+
+      <h3>준비물</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="dist-p1" data-track><span class="txt">C920(장치에 달린 그 카메라)과 노트북</span></label></li>
+        <li><label><input type="checkbox" id="dist-p2" data-track><span class="txt">판 50×70 cm 이상 — 무늬 없는 골판지 면</span></label></li>
+        <li><label><input type="checkbox" id="dist-p3" data-track><span class="txt">줄자, 마스킹테이프, 거리 숫자 종이(0.5 · 1 · 1.5 · 2 · 3 · 4 · 6 · 8)</span></label></li>
+        <li><label><input type="checkbox" id="dist-p4" data-track><span class="txt">카메라를 1.0 m 높이에 둘 받침 — 의자 위에 상자를 쌓아도 돼요</span></label></li>
+      </ul>
+
+      <h3>절차</h3>
+      <ol class="steps">
+        <li>
+          <label class="step-title"><input type="checkbox" id="dist-s1" data-track><span>카메라 설정</span></label>
+          <div class="step-body">
+            <p>C920을 노트북에 꽂고 윈도 카메라 앱의 Pro 모드에서 초점을 가장 먼 쪽 끝으로 고정해요. 자동 초점은 끄고, 사진 비율은 16:9(1280×720 또는 1920×1080)로 해요.</p>
+            <p>촬영하는 동안 초점은 건드리지 않아요. 가까운 판이 조금 흐린 건 정상이에요. 장치도 같은 초점이에요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="dist-s2" data-track><span>카메라 놓기</span></label>
+          <div class="step-body">
+            <p>렌즈 높이 1.0 m, 수평, 정면. 렌즈 바로 아래 바닥을 0으로 하고 거리마다 바닥에 테이프를 붙여요. 거리는 렌즈 앞면에서 판 앞면까지예요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="dist-s3" data-track><span>실내 (복도) — 0.5 · 1 · 1.5 · 2 · 3 · 4 m</span></label>
+          <div class="step-body">
+            <p>거리마다 숫자 종이를 판에 대고 1장 → 종이를 떼고 판만 3장. 사진 사이에는 판을 들었다가 다시 놓아요. 판 가운데가 렌즈 높이에 오고 카메라를 똑바로 보게 해요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="dist-s4" data-track><span>실외 (넓은 보도·광장) — 1 · 2 · 3 · 4 · 6 · 8 m</span></label>
+          <div class="step-body">
+            <p>같은 방법으로 찍어요. 판이 바람에 흔들리지 않게 잡아 두세요.</p>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="dist-s5" data-track><span>정리</span></label>
+          <div class="step-body">
+            <p>실내·실외 폴더로 나누고 장소, 시각, 날씨를 메모해요. 보조자가 있으면 실외에서 판 대신 사람이 같은 거리에 서서 3장씩 더 찍어요(선택).</p>
+          </div>
+        </li>
+      </ol>
+
+      <aside class="caution">
+        <h4>주의</h4>
+        <ul>
+          <li>꼭 장치의 C920으로 찍어요. 다른 카메라는 화각이 달라서 거리 배율도 달라져요.</li>
+          <li>판이 작으면 먼 거리에서 칸 넓이의 10%를 못 채워, 장치가 쓰는 칸 대표 거리에 잡히지 않아요. 50×70 cm보다 작게 하지 않아요.</li>
+          <li>10/12~13에 찍은 영상은 실제 거리 기록이 없으면 쓰지 않아요.</li>
+          <li>노트북에서 초점이 고정되지 않으면 실내만 젯슨과 모니터로 찍어 두세요(<kbd>s</kbd> 키로 저장, 초점 0 자동 고정). 실외 방법은 그다음에 정해요.</li>
+        </ul>
+        <div class="cmd"><pre><code>cd ~/tactile-vision
+~/sensory_substitution/venv/bin/python -B tools/cam_raw.py --size 1280x720</code></pre><button type="button" class="copy">복사</button></div>
+      </aside>
+    </section>
+
+    <!-- 금 저녁: 핀 영점 -->
+    <section id="pins">
+      <div class="day-head">
+        <p class="eyebrow"><span>금 저녁 · 집 · 혼자</span><span class="count" data-section-count></span></p>
+        <h2>핀 영점 보정</h2>
+        <p class="lede">같은 지령에서 24핀의 높이가 얼마나 다른지 재고, 핀마다 영점 tick을 옮겨 맞춘 뒤 다시 잽니다.</p>
+      </div>
+      <div class="tape"><span class="k">완료 기준</span><span class="v">보정 전·후 각각 24핀 × 단계 0·7 × 5회 (기록 240줄), 보정 파일 저장과 백업</span></div>
+
+      <h3>준비물</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="pin-p1" data-track><span class="txt">디지털 캘리퍼스 — 켜고 턱을 닫은 상태에서 0으로 맞추기</span></label></li>
+        <li><label><input type="checkbox" id="pin-p2" data-track><span class="txt">기록지 2장(보정 전·후) — 핀 0~23 줄, 5회 × (단계 0, 단계 7) 칸</span></label></li>
+      </ul>
+
+      <h3>재는 법</h3>
+      <div class="pair">
+        <div><b>핀이 튀어나왔을 때 (+)</b><p>캘리퍼스를 세워 본체 끝면을 핀 윗면에 얹고, 깊이 막대를 핀 바로 옆 패드 표면까지 내려 읽어요.</p></div>
+        <div><b>핀이 패드보다 낮을 때 (−)</b><p>끝면을 패드 표면에 얹고 깊이 막대를 핀 윗면까지 내려 읽은 뒤 −를 붙여요.</p></div>
+      </div>
+      <p class="note">매번 같은 자세로, 0번부터 23번까지 같은 순서로 재요.</p>
+
+      <h3>절차</h3>
+      <ol class="steps">
+        <li>
+          <label class="step-title"><input type="checkbox" id="pin-s1" data-track><span>보정 파일 백업</span></label>
+          <div class="step-body">
+            <div class="cmd"><pre><code>cd ~/tactile-vision
+PY=~/sensory_substitution/venv/bin/python
+cp calib/servo_calib.json calib/servo_calib_backup_$(date +%m%d_%H%M).json</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="pin-s2" data-track><span>보정 전 측정 — 5회</span></label>
+          <div class="step-body">
+            <p>24칸을 공통값(372/232)으로 움직여요. 보정 파일은 건드리지 않아요. 핀이 내려가 있는 6분 동안 24핀(단계 0)을, 올라가 있는 6분 동안 24핀(단계 7)을 재요. 이걸 5번 반복해요.</p>
+            <div class="cmd"><pre><code>$PY -B tools/servo_updown_test.py --home 372 --span 140 --cycles 5 --hold 360</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="pin-s3" data-track><span>핀마다 영점 맞추기</span></label>
+          <div class="step-body">
+            <div class="cmd"><pre><code>$PY -B tools/calibrate_pins.py --step 1</code></pre><button type="button" class="copy">복사</button></div>
+            <dl class="keys">
+              <dt><kbd>n</kbd> <kbd>p</kbd></dt><dd>다음·이전 채널 (또는 <kbd>0</kbd>~<kbd>9</kbd>, <kbd>a</kbd>~<kbd>n</kbd>로 바로 고르기)</dd>
+              <dt><kbd>g</kbd></dt><dd>영점 위치로 이동 → 캘리퍼스로 재기</dd>
+              <dt><kbd>k</kbd> <kbd>j</kbd></dt><dd>1 tick씩 이동. 역방향 조립이라 <kbd>k</kbd>는 핀이 내려가고 <kbd>j</kbd>는 올라가요</dd>
+              <dt><kbd>h</kbd></dt><dd>0.00 mm(±0.05)가 되면 영점 저장. 누른 키와 횟수를 적어 둬요</dd>
+              <dt><kbd>G</kbd> → <kbd>m</kbd></dt><dd>최대 위치로 가서 같은 키를 같은 횟수만큼 누른 뒤 최대 저장. 스트로크가 그대로 유지돼요</dd>
+              <dt><kbd>t</kbd></dt><dd>24칸을 다 하면 전체 스윕으로 눈 확인</dd>
+              <dt><kbd>s</kbd> → <kbd>q</kbd></dt><dd>저장하고 끝내기</dd>
+            </dl>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="pin-s4" data-track><span>보정 후 측정 — 5회</span></label>
+          <div class="step-body">
+            <p>이번에는 저장한 보정 파일 값으로 움직여요. 재는 방법은 2번과 같아요.</p>
+            <div class="cmd"><pre><code>$PY -B tools/servo_updown_test.py --cycles 5 --hold 360</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="pin-s5" data-track><span>기록지 사진</span></label>
+          <div class="step-body">
+            <p>보정 전·후 두 장을 찍어 둬요. 나중에 분석용 CSV(phase, pin, rep, zero_mm, top_mm, home_tick)로 옮겨요.</p>
+          </div>
+        </li>
+      </ol>
+
+      <aside class="caution">
+        <h4>주의</h4>
+        <ul>
+          <li>핀이 움직이는 동안 손을 패드에 두지 않아요.</li>
+          <li>최대 위치를 옮길 때 기어가 걸리는 소리가 나면 멈추고, 그 칸은 메모만 해요.</li>
+          <li>6분 안에 24핀을 다 못 재면 <code>--hold</code> 값(초)을 늘려요.</li>
+        </ul>
+      </aside>
+
+      <h3>토요일 준비 (같은 날 밤)</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="sat-p1" data-track><span class="txt"><b>SSH 연습</b> — 젯슨과 노트북을 휴대폰 핫스팟에 연결 → 젯슨에서 <code>hostname -I</code>로 IP 확인 → 노트북 PowerShell에서 <code>ssh june@IP</code>. 접속되면 성공</span></label></li>
+        <li><label><input type="checkbox" id="sat-p2" data-track><span class="txt">장애물 ① 빈 상자 (높이 45 cm)</span></label></li>
+        <li><label><input type="checkbox" id="sat-p3" data-track><span class="txt">장애물 ② 사람 크기 판 (골판지, 높이 170 cm × 폭 45 cm, 넘어지지 않게 받침)</span></label></li>
+        <li><label><input type="checkbox" id="sat-p4" data-track><span class="txt">장애물 ③ 머리 높이 판 (골판지 약 60×40 cm, 아랫면 145 cm) — 매달 방법까지 정하기. 지팡이에 걸리는 받침이 없어야 해요</span></label></li>
+        <li><label><input type="checkbox" id="sat-p5" data-track><span class="txt">장애물 ④ 의자</span></label></li>
+        <li><label><input type="checkbox" id="sat-p6" data-track><span class="txt">수면 안대, 흰지팡이(또는 막대), 초시계(휴대폰)</span></label></li>
+        <li><label><input type="checkbox" id="sat-p7" data-track><span class="txt">배터리 충전 — LiPo 2개, 보조배터리, 노트북, 휴대폰</span></label></li>
+      </ul>
+    </section>
+
+    <!-- 토: 보행 -->
+    <section id="walk">
+      <div class="day-head">
+        <p class="eyebrow"><span>토 · 복도 · 보조자 1명</span><span class="count" data-section-count></span></p>
+        <h2>1인 장애물 보행</h2>
+        <p class="lede">눈을 가리고 10 m 코스를 걸을 때 지팡이만(C), 장치만(D), 둘 다(C+D) 쓴 경우의 완주 시간과 충돌을 비교합니다. 그 전에, 걷지 않고 선 채로 장애물마다 장치가 몇 단계로 표시하는지 잽니다.</p>
+      </div>
+      <div class="tape"><span class="k">완료 기준</span><span class="v">정지 감지 로그 20개, 보행 18회 기록표, 묶음 로그 2개, 영상, 사진(장치 착용·코스)</span></div>
+
+      <div class="pair">
+        <div><b>참여자 (본인)</b><p>안대, 장치 착용, 걷기</p></div>
+        <div><b>보조자</b><p>배치 바꾸기, 초시계, 뒤따르며 촬영, 위험하면 멈춰 세우기</p></div>
+      </div>
+
+      <h3>코스와 배치</h3>
+      <p>폭 2.4 m, 길이 10 m. 출발선·도착선과 2.5 · 4.5 · 6.5 · 8.5 m 위치를 바닥에 테이프로 표시해요. 복도가 짧거나 좁으면 비율대로 줄이고 실제 크기를 적어요.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>배치</th><th>① 상자</th><th>② 사람 판</th><th>③ 머리 판</th><th>④ 의자</th></tr></thead>
+          <tbody>
+            <tr><td class="num">L1</td><td>2.5 m 왼쪽</td><td>4.5 m 가운데</td><td>6.5 m 오른쪽</td><td>8.5 m 오른쪽 벽</td></tr>
+            <tr><td class="num">L2</td><td>4.5 m 오른쪽</td><td>8.5 m 왼쪽</td><td>2.5 m 가운데</td><td>6.5 m 왼쪽 벽</td></tr>
+            <tr><td class="num">L3</td><td>6.5 m 가운데</td><td>2.5 m 오른쪽</td><td>8.5 m 왼쪽</td><td>4.5 m 오른쪽 벽</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="courses">
+        <figure class="course">
+          <figcaption>L1</figcaption>
+          <svg viewBox="0 0 1040 322" role="img" aria-label="배치 L1: 상자 2.5 m 왼쪽, 사람 판 4.5 m 가운데, 머리 판 6.5 m 오른쪽, 의자 8.5 m 오른쪽 벽">
+            <g class="ticks"><line x1="20" y1="32" x2="20" y2="40"/><line x1="220" y1="32" x2="220" y2="40"/><line x1="420" y1="32" x2="420" y2="40"/><line x1="620" y1="32" x2="620" y2="40"/><line x1="820" y1="32" x2="820" y2="40"/><line x1="1020" y1="32" x2="1020" y2="40"/></g>
+            <text x="20" y="26" text-anchor="middle">0</text><text x="220" y="26" text-anchor="middle">2</text><text x="420" y="26" text-anchor="middle">4</text><text x="620" y="26" text-anchor="middle">6</text><text x="820" y="26" text-anchor="middle">8</text><text x="1020" y="26" text-anchor="end">10 m</text>
+            <rect class="floor" x="20" y="40" width="1000" height="240"/>
+            <line class="mark" x1="270" y1="40" x2="270" y2="280"/><line class="mark" x1="470" y1="40" x2="470" y2="280"/><line class="mark" x1="670" y1="40" x2="670" y2="280"/><line class="mark" x1="870" y1="40" x2="870" y2="280"/>
+            <line class="wall" x1="20" y1="40" x2="1020" y2="40"/><line class="wall" x1="20" y1="280" x2="1020" y2="280"/>
+            <line class="start" x1="20" y1="40" x2="20" y2="280"/><line class="finish" x1="1020" y1="40" x2="1020" y2="280"/>
+            <rect class="ob" x="247.5" y="77.5" width="45" height="45"/><text class="lab" x="302" y="110">①</text>
+            <rect class="ob" x="465" y="137.5" width="10" height="45"/><text class="lab" x="487" y="170">②</text>
+            <rect class="hang" x="665" y="190" width="10" height="60"/><text class="lab" x="687" y="230">③</text>
+            <rect class="chair" x="847.5" y="235" width="45" height="45"/><text class="lab" x="902" y="267">④</text>
+            <text class="end" x="20" y="312" text-anchor="start">출발</text><text class="end" x="1020" y="312" text-anchor="end">도착</text>
+          </svg>
+        </figure>
+        <figure class="course">
+          <figcaption>L2</figcaption>
+          <svg viewBox="0 0 1040 322" role="img" aria-label="배치 L2: 머리 판 2.5 m 가운데, 상자 4.5 m 오른쪽, 의자 6.5 m 왼쪽 벽, 사람 판 8.5 m 왼쪽">
+            <g class="ticks"><line x1="20" y1="32" x2="20" y2="40"/><line x1="220" y1="32" x2="220" y2="40"/><line x1="420" y1="32" x2="420" y2="40"/><line x1="620" y1="32" x2="620" y2="40"/><line x1="820" y1="32" x2="820" y2="40"/><line x1="1020" y1="32" x2="1020" y2="40"/></g>
+            <text x="20" y="26" text-anchor="middle">0</text><text x="220" y="26" text-anchor="middle">2</text><text x="420" y="26" text-anchor="middle">4</text><text x="620" y="26" text-anchor="middle">6</text><text x="820" y="26" text-anchor="middle">8</text><text x="1020" y="26" text-anchor="end">10 m</text>
+            <rect class="floor" x="20" y="40" width="1000" height="240"/>
+            <line class="mark" x1="270" y1="40" x2="270" y2="280"/><line class="mark" x1="470" y1="40" x2="470" y2="280"/><line class="mark" x1="670" y1="40" x2="670" y2="280"/><line class="mark" x1="870" y1="40" x2="870" y2="280"/>
+            <line class="wall" x1="20" y1="40" x2="1020" y2="40"/><line class="wall" x1="20" y1="280" x2="1020" y2="280"/>
+            <line class="start" x1="20" y1="40" x2="20" y2="280"/><line class="finish" x1="1020" y1="40" x2="1020" y2="280"/>
+            <rect class="hang" x="265" y="130" width="10" height="60"/><text class="lab" x="287" y="170">③</text>
+            <rect class="ob" x="447.5" y="197.5" width="45" height="45"/><text class="lab" x="502" y="230">①</text>
+            <rect class="chair" x="647.5" y="40" width="45" height="45"/><text class="lab" x="702" y="72">④</text>
+            <rect class="ob" x="865" y="77.5" width="10" height="45"/><text class="lab" x="887" y="110">②</text>
+            <text class="end" x="20" y="312" text-anchor="start">출발</text><text class="end" x="1020" y="312" text-anchor="end">도착</text>
+          </svg>
+        </figure>
+        <figure class="course">
+          <figcaption>L3</figcaption>
+          <svg viewBox="0 0 1040 322" role="img" aria-label="배치 L3: 사람 판 2.5 m 오른쪽, 의자 4.5 m 오른쪽 벽, 상자 6.5 m 가운데, 머리 판 8.5 m 왼쪽">
+            <g class="ticks"><line x1="20" y1="32" x2="20" y2="40"/><line x1="220" y1="32" x2="220" y2="40"/><line x1="420" y1="32" x2="420" y2="40"/><line x1="620" y1="32" x2="620" y2="40"/><line x1="820" y1="32" x2="820" y2="40"/><line x1="1020" y1="32" x2="1020" y2="40"/></g>
+            <text x="20" y="26" text-anchor="middle">0</text><text x="220" y="26" text-anchor="middle">2</text><text x="420" y="26" text-anchor="middle">4</text><text x="620" y="26" text-anchor="middle">6</text><text x="820" y="26" text-anchor="middle">8</text><text x="1020" y="26" text-anchor="end">10 m</text>
+            <rect class="floor" x="20" y="40" width="1000" height="240"/>
+            <line class="mark" x1="270" y1="40" x2="270" y2="280"/><line class="mark" x1="470" y1="40" x2="470" y2="280"/><line class="mark" x1="670" y1="40" x2="670" y2="280"/><line class="mark" x1="870" y1="40" x2="870" y2="280"/>
+            <line class="wall" x1="20" y1="40" x2="1020" y2="40"/><line class="wall" x1="20" y1="280" x2="1020" y2="280"/>
+            <line class="start" x1="20" y1="40" x2="20" y2="280"/><line class="finish" x1="1020" y1="40" x2="1020" y2="280"/>
+            <rect class="ob" x="265" y="197.5" width="10" height="45"/><text class="lab" x="287" y="230">②</text>
+            <rect class="chair" x="447.5" y="235" width="45" height="45"/><text class="lab" x="502" y="267">④</text>
+            <rect class="ob" x="647.5" y="137.5" width="45" height="45"/><text class="lab" x="702" y="170">①</text>
+            <rect class="hang" x="865" y="70" width="10" height="60"/><text class="lab" x="887" y="110">③</text>
+            <text class="end" x="20" y="312" text-anchor="start">출발</text><text class="end" x="1020" y="312" text-anchor="end">도착</text>
+          </svg>
+        </figure>
+      </div>
+      <p class="note">왼쪽·오른쪽은 걷는 사람 기준이에요. 그림의 위쪽 벽이 왼쪽 벽이고, 점선 테두리(③)는 매달린 판이에요.</p>
+
+      <h3>진행 순서</h3>
+      <ol class="steps">
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s1" data-track><span>코스 설치</span></label>
+          <div class="step-body"><p>바닥에 테이프로 표시하고, L1 배치를 한 번 놓아 봐요.</p></div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s2" data-track><span>젯슨 접속</span></label>
+          <div class="step-body">
+            <p>노트북에서 SSH로 접속한 뒤:</p>
+            <div class="cmd"><pre><code>cd ~/tactile-vision
+PY=~/sensory_substitution/venv/bin/python</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s3" data-track><span>정지 감지 시험 (약 30분, 걷지 않음)</span></label>
+          <div class="step-body">
+            <p>장애물 하나를 코스 가운데에 두고, 장치를 착용한 채 장애물 앞 4 · 3 · 2 · 1.5 · 1 m에 서서 8초씩 실행해요. 핀은 움직이지 않아요. 위치마다 로그를 바로 복사해요.</p>
+            <div class="cmd"><pre><code>$PY -B run.py --no-hw --duration 8
+cp logs/metrics.csv logs/static_box_4m.csv</code></pre><button type="button" class="copy">복사</button></div>
+            <p class="note">파일 이름의 장애물(box · panel · head · chair)과 거리를 바꿔 가며 20번 해요. 예: <code>static_head_1.5m.csv</code></p>
+            <div class="table-wrap">
+              <table class="grid">
+                <thead><tr><th>장애물</th><th>4 m</th><th>3 m</th><th>2 m</th><th>1.5 m</th><th>1 m</th></tr></thead>
+                <tbody>
+                  <tr><th>① 상자<code>box</code></th><td><input type="checkbox" id="st-box-4" data-track aria-label="상자 4 m"></td><td><input type="checkbox" id="st-box-3" data-track aria-label="상자 3 m"></td><td><input type="checkbox" id="st-box-2" data-track aria-label="상자 2 m"></td><td><input type="checkbox" id="st-box-15" data-track aria-label="상자 1.5 m"></td><td><input type="checkbox" id="st-box-1" data-track aria-label="상자 1 m"></td></tr>
+                  <tr><th>② 사람 판<code>panel</code></th><td><input type="checkbox" id="st-panel-4" data-track aria-label="사람 판 4 m"></td><td><input type="checkbox" id="st-panel-3" data-track aria-label="사람 판 3 m"></td><td><input type="checkbox" id="st-panel-2" data-track aria-label="사람 판 2 m"></td><td><input type="checkbox" id="st-panel-15" data-track aria-label="사람 판 1.5 m"></td><td><input type="checkbox" id="st-panel-1" data-track aria-label="사람 판 1 m"></td></tr>
+                  <tr><th>③ 머리 판<code>head</code></th><td><input type="checkbox" id="st-head-4" data-track aria-label="머리 판 4 m"></td><td><input type="checkbox" id="st-head-3" data-track aria-label="머리 판 3 m"></td><td><input type="checkbox" id="st-head-2" data-track aria-label="머리 판 2 m"></td><td><input type="checkbox" id="st-head-15" data-track aria-label="머리 판 1.5 m"></td><td><input type="checkbox" id="st-head-1" data-track aria-label="머리 판 1 m"></td></tr>
+                  <tr><th>④ 의자<code>chair</code></th><td><input type="checkbox" id="st-chair-4" data-track aria-label="의자 4 m"></td><td><input type="checkbox" id="st-chair-3" data-track aria-label="의자 3 m"></td><td><input type="checkbox" id="st-chair-2" data-track aria-label="의자 2 m"></td><td><input type="checkbox" id="st-chair-15" data-track aria-label="의자 1.5 m"></td><td><input type="checkbox" id="st-chair-1" data-track aria-label="의자 1 m"></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s4" data-track><span>기준 속도</span></label>
+          <div class="step-body"><p>눈을 뜨고 장애물 없이 3번 걸어요. 세 시간의 평균이 기준 시간(baseline_s)이에요.</p></div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s5" data-track><span>연습 (코스 밖에서)</span></label>
+          <div class="step-body"><p>지팡이 이점 접촉법 10분, 장치 10분, 둘 다 5분. 실제로 연습한 시간을 적어요.</p></div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s6" data-track><span>장치 켜고 묶음 1 (1~9번)</span></label>
+          <div class="step-body">
+            <p>이렇게 켜면 SSH가 끊겨도 계속 돌아요.</p>
+            <div class="cmd"><pre><code>setsid -f nohup $PY -B run.py &gt; /tmp/tv_run.log 2&gt;&amp;1 &lt; /dev/null</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s7" data-track><span>쉬는 동안 끄고 로그 복사</span></label>
+          <div class="step-body">
+            <div class="cmd"><pre><code>kill -TERM $(pgrep -f '[r]un\.py'); sleep 3
+cp logs/metrics.csv logs/exp3_block1.csv</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s8" data-track><span>다시 켜고 묶음 2 (10~18번), 끝나면 끄고 복사</span></label>
+          <div class="step-body">
+            <div class="cmd"><pre><code>setsid -f nohup $PY -B run.py &gt; /tmp/tv_run.log 2&gt;&amp;1 &lt; /dev/null
+# 18번까지 끝나면
+kill -TERM $(pgrep -f '[r]un\.py'); sleep 3
+cp logs/metrics.csv logs/exp3_block2.csv</code></pre><button type="button" class="copy">복사</button></div>
+          </div>
+        </li>
+        <li>
+          <label class="step-title"><input type="checkbox" id="walk-s9" data-track><span>마무리 사진</span></label>
+          <div class="step-body"><p>장치를 착용한 모습, 코스 전경, 기록표.</p></div>
+        </li>
+      </ol>
+
+      <h3>한 번의 시행</h3>
+      <ol class="plain">
+        <li>참여자는 안대를 쓰고 출발선 뒤에서 벽 쪽을 보고 서 있어요. 배치를 보지 않아요.</li>
+        <li>보조자가 순서표의 배치로 장애물을 옮기고, 조건에 맞게 지팡이를 주거나 거둬요.</li>
+        <li>"출발" — 보조자가 초시계를 누르고 뒤따르며 촬영해요.</li>
+        <li>몸이 도착선을 넘으면 "도착" — 초시계를 멈춰요.</li>
+        <li>장애물별 충돌을 적어요. 몸이나 장치가 닿으면 1회, 보조자가 멈춰 세워도 1회예요. 지팡이 끝이 닿은 건 세지 않아요.</li>
+        <li>30초 쉬고 다음 시행으로 넘어가요.</li>
+      </ol>
+      <p class="note"><b>C+D에서 손:</b> 지팡이는 주로 쓰는 손에, 다른 손 손바닥은 패드에 두고 필요하면 좌우로 옮겨 훑어요. 정한 방법을 그대로 적어요.</p>
+
+      <h3>시행 순서표</h3>
+      <div class="table-wrap">
+        <table class="order">
+          <thead><tr><th>완료</th><th>순서</th><th>배치</th><th>조건</th></tr></thead>
+          <tbody>
+            <tr class="block"><td colspan="4">묶음 1</td></tr>
+            <tr><td><input type="checkbox" id="tr-01" data-track aria-label="1번 시행 완료"></td><td class="num">1</td><td class="num">L2</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+            <tr><td><input type="checkbox" id="tr-02" data-track aria-label="2번 시행 완료"></td><td class="num">2</td><td class="num">L1</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-03" data-track aria-label="3번 시행 완료"></td><td class="num">3</td><td class="num">L3</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-04" data-track aria-label="4번 시행 완료"></td><td class="num">4</td><td class="num">L2</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-05" data-track aria-label="5번 시행 완료"></td><td class="num">5</td><td class="num">L3</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+            <tr><td><input type="checkbox" id="tr-06" data-track aria-label="6번 시행 완료"></td><td class="num">6</td><td class="num">L1</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-07" data-track aria-label="7번 시행 완료"></td><td class="num">7</td><td class="num">L3</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-08" data-track aria-label="8번 시행 완료"></td><td class="num">8</td><td class="num">L2</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-09" data-track aria-label="9번 시행 완료"></td><td class="num">9</td><td class="num">L1</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+            <tr class="block"><td colspan="4">묶음 2</td></tr>
+            <tr><td><input type="checkbox" id="tr-10" data-track aria-label="10번 시행 완료"></td><td class="num">10</td><td class="num">L3</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-11" data-track aria-label="11번 시행 완료"></td><td class="num">11</td><td class="num">L2</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-12" data-track aria-label="12번 시행 완료"></td><td class="num">12</td><td class="num">L1</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-13" data-track aria-label="13번 시행 완료"></td><td class="num">13</td><td class="num">L3</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-14" data-track aria-label="14번 시행 완료"></td><td class="num">14</td><td class="num">L2</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+            <tr><td><input type="checkbox" id="tr-15" data-track aria-label="15번 시행 완료"></td><td class="num">15</td><td class="num">L1</td><td><span class="cond">C</span>지팡이만</td></tr>
+            <tr><td><input type="checkbox" id="tr-16" data-track aria-label="16번 시행 완료"></td><td class="num">16</td><td class="num">L3</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+            <tr><td><input type="checkbox" id="tr-17" data-track aria-label="17번 시행 완료"></td><td class="num">17</td><td class="num">L2</td><td><span class="cond d">D</span>장치만</td></tr>
+            <tr><td><input type="checkbox" id="tr-18" data-track aria-label="18번 시행 완료"></td><td class="num">18</td><td class="num">L1</td><td><span class="cond cd">C+D</span>둘 다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">같은 배치나 같은 조건이 연달아 나오지 않게 미리 무작위로 정한 순서예요. 묶음마다 조건 3가지 × 배치 3가지가 한 번씩 들어 있어요.</p>
+
+      <h3>기록표 (종이)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>순서</th><th>배치</th><th>조건</th><th>시간(초)</th><th>① 상자</th><th>② 사람 판</th><th>③ 머리 판</th><th>④ 의자</th><th>벽</th><th>메모</th></tr></thead>
+          <tbody>
+            <tr><td class="num">예</td><td class="num">L2</td><td>C+D</td><td class="num">38.4</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td>칸 쓰는 법 예시</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">분석할 때 쓰는 열: participant(P1), cond(cane · device · cane_device), block, trial, layout, time_s, col_low(①), col_panel(②), col_head(③), col_side(④), col_wall(벽), baseline_s</p>
+
+      <aside class="caution">
+        <h4>안전</h4>
+        <ul>
+          <li>보조자는 늘 1 m 안에서 뒤따르고, 멈춤 신호("정지")를 미리 정해요.</li>
+          <li>장애물은 가벼운 골판지로 해요. 머리 높이 판은 부딪히면 밀려나게 끈으로 매달고 모서리는 테이프로 감싸요.</li>
+          <li>장치만(D) 쓸 때는 지팡이가 없어 45 cm 상자에 걸려 넘어질 수 있어요. 보조자가 특히 가까이 붙어요.</li>
+          <li>시작 전에 LiPo 전압과 배선을 확인하고, 뜨거워지면 바로 멈춰요.</li>
+          <li>IRB 답이 '안 된다'면 정지 감지 시험만 하고 보행은 하지 않아요.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <!-- 기록 규칙 -->
+    <section id="records">
+      <h2>기록 규칙</h2>
+      <ul class="rules">
+        <li>원본(영상·사진·로그)은 지우거나 덮어쓰지 않아요. '날짜_실험' 폴더에 그대로 둬요. 예: 1015_반응시간</li>
+        <li><code>run.py</code>는 실행할 때마다 <code>logs/metrics.csv</code>를 새로 써요. 끝나면 바로 다른 이름으로 복사해요.</li>
+        <li>종이 기록은 사진을 찍어 두세요. 나중에 분석용 CSV로 옮길 때 써요.</li>
+        <li>그날 쓴 설정을 메모해요: 코드 버전(<code>git log -1</code>), 보정 전/후, 장소, 시각.</li>
+        <li>분석 폴더의 <code>make_example_data.py</code>는 다시 돌리지 않아요. 실측 CSV를 덮어써요.</li>
+        <li>얼굴이 나온 영상·사진은 공개 저장소에 올리지 않아요.</li>
+      </ul>
+      <h3>이번에 하지 않는 것</h3>
+      <ul class="rules quiet">
+        <li>단계 수(8단계)·필터·거리 범위 바꾸기</li>
+        <li>손바닥 높이 구별 실험, 카메라 체커보드 캘리브레이션</li>
+        <li>실외 보행, 여러 명 참여</li>
+        <li>거리 보정 계수를 장치 설정에 넣기 (분석에서만 써요)</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>2026-10-15 작성 · 체크 표시는 이 기기의 브라우저에만 저장돼요.</p>
+    <button type="button" id="clear-checks">체크 모두 지우기</button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var KEY = "tv-notebook-checks-v1";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][data-track]'));
+  var doneEl = document.getElementById("done-count");
+  var totalEl = document.getElementById("total-count");
+  var bar = document.getElementById("progress-bar");
+
+  function update() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    doneEl.textContent = done;
+    totalEl.textContent = boxes.length;
+    bar.style.width = (boxes.length ? (done / boxes.length) * 100 : 0) + "%";
+    document.querySelectorAll("[data-section-count]").forEach(function (el) {
+      var sec = el.closest("section");
+      if (!sec) return;
+      var bs = Array.prototype.slice.call(sec.querySelectorAll('input[type="checkbox"][data-track]'));
+      var d = bs.filter(function (b) { return b.checked; }).length;
+      el.textContent = d + "/" + bs.length;
+    });
+  }
+
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* storage unavailable */ }
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener("change", function () {
+      saved[b.id] = b.checked;
+      persist();
+      update();
+    });
+  });
+  update();
+
+  document.querySelectorAll(".cmd .copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var code = btn.parentElement.querySelector("code");
+      var text = code ? code.innerText : "";
+      function flash(label) {
+        btn.textContent = label;
+        setTimeout(function () { btn.textContent = "복사"; }, 1500);
+      }
+      function selectInstead() {
+        try {
+          var r = document.createRange();
+          r.selectNodeContents(code);
+          var s = window.getSelection();
+          s.removeAllRanges();
+          s.addRange(r);
+          flash("선택됨");
+        } catch (e) { flash("직접 선택"); }
+      }
+      try {
+        navigator.clipboard.writeText(text).then(function () { flash("복사됨"); }, selectInstead);
+      } catch (e) { selectInstead(); }
+    });
+  });
+
+  var clearBtn = document.getElementById("clear-checks");
+  var armed = false;
+  var timer = null;
+  clearBtn.addEventListener("click", function () {
+    if (!armed) {
+      armed = true;
+      clearBtn.textContent = "한 번 더 누르면 모두 지워요";
+      timer = setTimeout(function () { armed = false; clearBtn.textContent = "체크 모두 지우기"; }, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    armed = false;
+    clearBtn.textContent = "체크 모두 지우기";
+    boxes.forEach(function (b) { b.checked = false; });
+    saved = {};
+    try { localStorage.removeItem(KEY); } catch (e) { /* storage unavailable */ }
+    update();
+  });
+})();
+</script>
+</body>
+</html>
