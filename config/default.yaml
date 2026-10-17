@@ -153,8 +153,11 @@ scene:
   uncertain_policy: hold
   # 장면별 d_far (mapping.far_m 대신). d_near는 mapping.near_m 공통.
   # d_far는 확정 장면을 따른다(애매 구간에도 바뀌지 않음).
-  far_indoor_m: 4.0
-  far_outdoor_m: 8.0
+  # 2026-10-17 사용자 결정(ground-scale 가지): 실내 4 → 8 m, 실외 8 → 20 m. 로그 눈금 한 단계 배율
+  # 실내 1.49배, 실외 1.69배. 핀이 올라오기 시작하는 거리(반올림) 실내 6.56 m, 실외 15.4 m.
+  # 거리 사진은 8 m까지만 검증 — 8~20 m 정확도는 모른다.
+  far_indoor_m: 8.0
+  far_outdoor_m: 20.0
   # 전환 시 ln(d_far)를 이 시간 동안 선형 보간 — 핀이 한꺼번에 바뀌지 않게
   crossfade_s: 0.7
 

@@ -38,7 +38,9 @@ RP2040 (Pico) 펌웨어 v3
   실외 MAPE 21.1%(실내 모델 − 0.44 m를 썼을 때 38.0%). 상자 거리로 맞춘 값은 없다.
 - **실내**: 실내 모델(Hypersim)은 거리와 관계없이 약 0.44 m 멀게 봤다 → `depth.indoor_offset_m: -0.44`
   (MAPE 34% → 9.5%, 장소 교차).
-- 실내/실외 판별·d_far(4 / 8 m)·매핑·필터·펌웨어는 바뀌지 않았다.
+- **d_far**: 실내 4 → **8 m**, 실외 8 → **20 m** (사용자 결정). 핀이 올라오기 시작하는 거리는 실내 6.56 m, 실외 15.4 m.
+  8 m 넘는 거리의 정확도는 검증하지 않았다.
+- 실내/실외 판별·매핑 방식(로그 8단계)·필터·펌웨어는 바뀌지 않았다.
 - 한계: 기울기 1°·높이 5 cm가 틀리면 실외 MAPE가 약 5%p씩 나빠진다(`ground` 섹션을 착용 상태로 맞출 것).
   땅이 화면 아래에 보여야 한다. 걸을 때의 흔들림(배율 시간 평활)은 검증하지 않았다.
 - 시험: `tools/test_ground.py`(41항목, CPU) + 기존 199항목.
@@ -78,7 +80,7 @@ RP2040 (Pico) 펌웨어 v3
 | 0 | 5.66 ~ 8.00 m | 2.34 m | 0.0 mm |
 
 충돌 위험 구간(0.5~1m)에 2단계를 배정하면서 8m까지 구분을 유지한다.
-위 표는 실외 d_far 8 m 기준이다. 실내는 d_far 4 m (`python run.py --show-mapping`).
+위 표는 d_far 8 m 기준이다(`ground-scale` 가지에서는 실내). `ground-scale` 가지의 실외는 20 m, `main`은 실내 4 m / 실외 8 m (`python run.py --show-mapping`).
 
 ### 2. 단계 수는 지각 한계가 정한다
 
@@ -184,8 +186,8 @@ python run.py --no-hw                # Pico 없이
 python run.py --source clip.mp4      # 녹화 영상으로 재현 실험
 
 # 실내/실외 (기본: 자동 전환)
-python run.py --scene indoor         # 실내 모델 + d_far 4 m 고정
-python run.py --scene outdoor        # 실외 모델 + d_far 8 m 고정
+python run.py --scene indoor         # 실내 모델 + 실내 d_far 고정
+python run.py --scene outdoor        # 실외 모델 + 실외 d_far 고정
 python run.py --scene off            # 예전 방식 (실내 모델 + mapping.far_m)
 
 # 실험 조건 전환 (코드 수정 없음)
@@ -287,7 +289,7 @@ docs/experiment_design.md      논문 실험 설계
 
 ## 알려진 한계
 
-- d_far(실내 4 m / 실외 8 m) 밖은 레벨 0으로 포화 (적응형 far bound는 옵션으로 구현, 기본 비활성)
+- d_far(`ground-scale` 가지 실내 8 m / 실외 20 m, `main` 4 / 8 m) 밖은 레벨 0으로 포화 (적응형 far bound는 옵션으로 구현, 기본 비활성)
 - 실내·실외 모델의 거리 스케일이 달라(같은 장면에서 약 2.4~2.6배) 전환 순간 핀 높이가 바뀐다.
   d_far 0.7 s 보간과 비대칭 필터가 완화하지만 스케일 차이 자체는 남는다
 - 배열 세로 스팬 120 mm가 손바닥 길이(~100 mm) 초과 → 행별 감도 불균일
