@@ -15,6 +15,7 @@ Depth Anything V2 metric 모델 → ONNX → TensorRT FP16 엔진.
 사용:
   python tools/build_engine.py --spec wide
   python tools/build_engine.py --spec faithful --outdoor
+  python tools/build_engine.py --spec wide_hi --relative   # 상대깊이(실외 땅 기준 환산용)
 """
 
 from __future__ import annotations
@@ -39,10 +40,13 @@ CKPT_DIR = REPO / "checkpoints"
 CKPTS = {
     "indoor": ("depth_anything_v2_metric_hypersim_vits.pth", 20.0),
     "outdoor": ("depth_anything_v2_metric_vkitti_vits.pth", 80.0),
+    # 상대깊이(metric 미세조정 전). 출력은 단위 없는 상대 역깊이 → ground.py가 땅 기준으로 m 환산
+    "relative": ("depth_anything_v2_vits.pth", None),
 }
 HF_REPO = {
     "indoor": "Depth-Anything-V2-Metric-Hypersim-Small",
     "outdoor": "Depth-Anything-V2-Metric-VKITTI-Small",
+    "relative": "Depth-Anything-V2-Small",
 }
 VITS_CFG = {"encoder": "vits", "features": 64, "out_channels": [48, 96, 192, 384]}
 
@@ -50,8 +54,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("build_engine")
 
 
-def export_onnx(spec: geo.InputSpec, domain: str, onnx_path: Path) -> float:
-    """metric 모델을 지정 해상도 고정 shape ONNX로 내보낸다. max_depth 반환."""
+def export_onnx(spec: geo.InputSpec, domain: str, onnx_path: Path) -> float | None:
+    """모델을 지정 해상도 고정 shape ONNX로 내보낸다. max_depth 반환(상대깊이는 None)."""
     import torch
 
     # vendor/ 의 metric 전용 dpt.py를 쓴다. 상대깊이용과 forward가 다르다:
@@ -71,7 +75,7 @@ def export_onnx(spec: geo.InputSpec, domain: str, onnx_path: Path) -> float:
             f"/resolve/main/{ckpt_name}"
         )
 
-    log.info("모델 로드: %s (max_depth=%.0fm)", ckpt.name, max_depth)
+    log.info("모델 로드: %s (%s)", ckpt.name, "상대깊이" if max_depth is None else f"max_depth={max_depth:.0f}m")
     model = DepthAnythingV2(**{**VITS_CFG, "max_depth": max_depth})
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
     model.load_state_dict(state)
@@ -83,8 +87,9 @@ def export_onnx(spec: geo.InputSpec, domain: str, onnx_path: Path) -> float:
     with torch.no_grad():
         out = model(dummy)
     log.info(
-        "출력 shape=%s  범위 %.2f~%.2f m  (max_depth %.0f)",
-        tuple(out.shape), float(out.min()), float(out.max()), max_depth,
+        "출력 shape=%s  범위 %.2f~%.2f %s",
+        tuple(out.shape), float(out.min()), float(out.max()),
+        "(상대 역깊이, 단위 없음)" if max_depth is None else f"m (max_depth {max_depth:.0f})",
     )
     if out.shape[-2:] != (spec.height, spec.width):
         raise RuntimeError(f"출력 해상도 불일치: {out.shape} vs {spec}")
@@ -99,7 +104,7 @@ def export_onnx(spec: geo.InputSpec, domain: str, onnx_path: Path) -> float:
         opset_version=17,
         do_constant_folding=True,
         input_names=["input"],
-        output_names=["depth_m"],
+        output_names=["depth_m" if max_depth is not None else "rel_disp"],
         dynamo=False,
     )
     log.info("ONNX 완료 (%.1f MB)", onnx_path.stat().st_size / 1e6)
@@ -153,15 +158,22 @@ def main() -> int:
                     help="입력 해상도 프리셋")
     ap.add_argument("--outdoor", action="store_true",
                     help="VKITTI(실외, max_depth 80m) 사용. 기본은 Hypersim(실내 20m)")
+    ap.add_argument("--relative", action="store_true",
+                    help="상대깊이 모델(Depth-Anything-V2-Small). 실외 땅 기준 환산(depth.outdoor_kind: ground)용")
     ap.add_argument("--no-fp16", action="store_true")
     ap.add_argument("--onnx-only", action="store_true")
     ap.add_argument("--force", action="store_true", help="기존 파일 무시하고 재생성")
     args = ap.parse_args()
 
     spec = geo.INPUT_SPECS[args.spec]
-    domain = "outdoor" if args.outdoor else "indoor"
-    tag = "vkitti" if args.outdoor else "hypersim"
-    stem = f"da2_metric_{tag}_vits_{spec.width}x{spec.height}"
+    if args.relative and args.outdoor:
+        ap.error("--relative와 --outdoor는 함께 쓸 수 없음")
+    if args.relative:
+        domain, stem = "relative", f"da2_rel_vits_{spec.width}x{spec.height}"
+    else:
+        domain = "outdoor" if args.outdoor else "indoor"
+        tag = "vkitti" if args.outdoor else "hypersim"
+        stem = f"da2_metric_{tag}_vits_{spec.width}x{spec.height}"
 
     onnx_path = REPO / "models" / f"{stem}.onnx"
     engine_path = REPO / "models" / f"{stem}.engine"
@@ -182,7 +194,8 @@ def main() -> int:
         return 0
 
     build_trt(onnx_path, engine_path, fp16=not args.no_fp16)
-    print(f"\nconfig/default.yaml 의 depth.engine 을 다음으로 설정:")
+    key = "outdoor_engine (+ outdoor_kind: ground)" if args.relative else "engine"
+    print(f"\nconfig/default.yaml 의 depth.{key} 을 다음으로 설정:")
     print(f"  models/{engine_path.name}")
     return 0
 

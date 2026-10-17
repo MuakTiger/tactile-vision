@@ -23,9 +23,17 @@ depth:
   # 2026-10-03부터 924x504(wide_hi). 이전 기본 504x280 엔진도 models/에 있다(input_spec: wide로 되돌림).
   # 실내 모델 (Hypersim). scene.mode가 off면 이것 하나만 쓴다.
   engine: models/da2_metric_hypersim_vits_924x504.engine
-  # 실외 모델 (Virtual KITTI 2). scene.mode가 auto / outdoor일 때 로드한다.
-  # 생성: python tools/build_engine.py --spec wide_hi --outdoor
-  outdoor_engine: models/da2_metric_vkitti_vits_924x504.engine
+  # 실외 엔진. scene.mode가 auto / outdoor일 때 로드한다.
+  # 2026-10-17 (ground-scale 가지): 실외 metric 모델(VKITTI2)은 보행 높이 사진에서 3~6배 멀게 봐서
+  # (거리 사진 실외 MAPE 519%) 상대깊이 모델 + 땅 기준 환산으로 바꿨다(실외 MAPE 21.1%).
+  # 생성: python tools/build_engine.py --spec wide_hi --relative
+  # 되돌리기: outdoor_engine: models/da2_metric_vkitti_vits_924x504.engine, outdoor_kind: metric
+  outdoor_engine: models/da2_rel_vits_924x504.engine
+  # metric = 엔진 출력(m) 그대로 | ground = 상대깊이를 아래 ground 섹션의 카메라 기하로 m 환산
+  outdoor_kind: ground
+  # 실내 모델 출력에 더하는 값(m). 거리 사진 실내 60장에서 실내 모델이 거리와 관계없이 약 0.44 m
+  # 멀게 봄(장소 1 0.47, 장소 2 0.41) → 빼면 MAPE 34% → 9.5%(장소 교차). 0 = 보정 없음
+  indoor_offset_m: -0.44
   # geometry.INPUT_SPECS 키: faithful(420x336, 종횡비 정합) | wide(504x280, 넓은 FOV)
   #   | wide_hi(924x504, wide와 같은 화각, 공식 해상도급 — 거리 스케일 편향 거의 없음, 연산 약 4배)
   # 2026-10-03 실측 (Orin Nano Super 25W, TRT FP16): 깊이 1회 504x280 12.8 ms / 924x504 48~50 ms,
@@ -35,6 +43,18 @@ depth:
   max_depth_m: 20.0
   # 모델 출력이 미터 단위 metric인지. false면 상대 시차로 처리.
   metric: true
+
+ground:
+  # 땅 기준 거리 환산 (depth.outdoor_kind: ground). 화면 아래 땅 줄의 거리를 카메라 높이·기울기·
+  # 초점거리로 계산해 상대깊이의 배율을 프레임마다 정한다. src/tactile_vision/ground.py 참고.
+  # 기울기 1° 또는 높이 5 cm가 틀리면 실외 MAPE가 약 5%p씩 나빠진다 — 착용 상태로 재서 넣을 것.
+  height_m: 0.70          # 렌즈 높이 (2026-10-17 사용자: 착용 높이도 70 cm)
+  pitch_deg: 0.0          # + = 아래를 봄. 거리 사진은 수평(역산 0.0~+0.2°)
+  f_px: 908.0             # C920 1280x720 초점거리(가정, 거리 사진 상자 크기 역산과 일치)
+  cy_px: null             # 주점 세로 위치. null = 화면 가운데
+  band_max_m: 3.5         # 배율 계산에 쓰는 땅 범위 끝 (맨 아래 줄 약 1.82 m부터)
+  smooth_tau_s: 1.0       # 배율의 시간 평활(로그 EMA). 걸을 때 흔들림 완화용 — 검증 안 됨
+  min_rows: 10
 
 grid:
   # 셀 대표값 산출. 장애물 회피는 '셀 내 최근접 표면'이 필요하므로 낮은 분위수.

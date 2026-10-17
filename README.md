@@ -27,6 +27,22 @@ RP2040 (Pico) 펌웨어 v3
 랙&피니언 Z축 핀 — 스트로크 20.9 mm, 8단계 (간격 2.99 mm)
 ```
 
+## `ground-scale` 가지 (2026-10-17) — 실외 땅 기준 거리 환산
+
+거리 사진 120장(실외 산책로·주차장 1~8 m, 실내 거실·주방 0.5~4 m, 렌즈 높이 0.70 m, 줄자 기준)으로
+두 metric 모델을 검증한 결과에 따라 바꾼 가지다. `main`은 그대로다.
+
+- **실외**: metric 실외 모델(VKITTI2)은 보행 높이 사진에서 3~6배 멀게 봤다(실외 MAPE 519%). 학습 카메라 높이
+  1.65 m와 화각 차이로 계산한 3.5배와 맞는다. 대신 **상대깊이 모델 + 땅 기준 환산**(`ground.py`)을 쓴다.
+  화면 아래 땅 줄의 거리를 카메라 높이·기울기·초점거리로 계산해 프레임마다 배율을 정한다. 출력은 그대로 미터다.
+  실외 MAPE 21.1%(실내 모델 − 0.44 m를 썼을 때 38.0%). 상자 거리로 맞춘 값은 없다.
+- **실내**: 실내 모델(Hypersim)은 거리와 관계없이 약 0.44 m 멀게 봤다 → `depth.indoor_offset_m: -0.44`
+  (MAPE 34% → 9.5%, 장소 교차).
+- 실내/실외 판별·d_far(4 / 8 m)·매핑·필터·펌웨어는 바뀌지 않았다.
+- 한계: 기울기 1°·높이 5 cm가 틀리면 실외 MAPE가 약 5%p씩 나빠진다(`ground` 섹션을 착용 상태로 맞출 것).
+  땅이 화면 아래에 보여야 한다. 걸을 때의 흔들림(배율 시간 평활)은 검증하지 않았다.
+- 시험: `tools/test_ground.py`(41항목, CPU) + 기존 199항목.
+
 ## 설계 원칙
 
 이 시스템의 모든 수치는 **STL 실측**과 **손바닥 지각 한계**에서 유도된다.
@@ -121,6 +137,7 @@ TensorRT 엔진은 빌드한 장치(Jetson Orin Nano, TensorRT 10.16)에서만 �
 |---|---|---|
 | `depth_anything_v2_metric_hypersim_vits.pth` (실내) | `checkpoints/` | [Hugging Face depth-anything/Depth-Anything-V2-Metric-Hypersim-Small](https://huggingface.co/depth-anything/Depth-Anything-V2-Metric-Hypersim-Small) |
 | `depth_anything_v2_metric_vkitti_vits.pth` (실외) | `checkpoints/` | [Hugging Face depth-anything/Depth-Anything-V2-Metric-VKITTI-Small](https://huggingface.co/depth-anything/Depth-Anything-V2-Metric-VKITTI-Small) |
+| `depth_anything_v2_vits.pth` (실외 상대깊이, `ground-scale` 가지) | `checkpoints/` | [Hugging Face depth-anything/Depth-Anything-V2-Small](https://huggingface.co/depth-anything/Depth-Anything-V2-Small) |
 | `yolo26n.pt` (위험도) | `checkpoints/` | Ultralytics YOLO26n 공식 가중치 |
 | `resnet18_places365.pth.tar`, `categories_places365.txt`, `IO_places365.txt` (실내/실외) | `checkpoints/places365/` | [CSAILVision/places365](https://github.com/CSAILVision/places365) (`src/tactile_vision/scene.py` 머리말에 주소) |
 | `*.onnx`, `*.engine` | `models/` | 아래 빌드 명령이 만든다 |
@@ -137,7 +154,8 @@ $VENV/bin/pip install -r requirements.txt
 
 # metric 깊이 엔진 빌드 (각 약 8분) — 기본 924×504
 $VENV/bin/python tools/build_engine.py --spec wide_hi           # 실내 (Hypersim)
-$VENV/bin/python tools/build_engine.py --spec wide_hi --outdoor # 실외 (VKITTI)
+$VENV/bin/python tools/build_engine.py --spec wide_hi --outdoor # 실외 (VKITTI, main 기본)
+$VENV/bin/python tools/build_engine.py --spec wide_hi --relative # 실외 상대깊이 (ground-scale 가지 기본)
 # 위험도 검출 엔진 (약 8분, ultralytics가 패키지를 자동 설치하지 않게)
 YOLO_AUTOINSTALL=false $VENV/bin/python tools/build_yolo.py --weights checkpoints/yolo26n.pt --imgsz 512 288
 
@@ -249,7 +267,8 @@ src/tactile_vision/
   geometry.py                  STL 실측 상수 (단일 진실 공급원)
   config.py                    설정 로딩 + 물리/지각 제약 검증
   camera.py                    스레드 캡처, 종횡비 정합 크롭
-  depth.py                     TRT metric 추론 + GPU 셀 풀링
+  depth.py                     TRT metric 추론 + GPU 셀 풀링 (+ 실내 보정, 땅 기준 환산 연결)
+  ground.py                    땅 기준 거리 환산 (상대깊이 → 미터, 카메라 높이·기울기·초점거리)
   mapping.py                   4가지 매핑 모드 + 비대칭 필터
   scene.py                     Places365 실내/실외 판별 + 판정 게이트
   switching.py                 자동 전환 정책 (모델 선택, d_far 보간)

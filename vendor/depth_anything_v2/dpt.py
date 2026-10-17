@@ -42,7 +42,8 @@ class DPTHead(nn.Module):
         features=256, 
         use_bn=False, 
         out_channels=[256, 512, 1024, 1024], 
-        use_clstoken=False
+        use_clstoken=False,
+        relative=False
     ):
         super(DPTHead, self).__init__()
         
@@ -110,7 +111,8 @@ class DPTHead(nn.Module):
             nn.Conv2d(head_features_1 // 2, head_features_2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
             nn.Conv2d(head_features_2, 1, kernel_size=1, stride=1, padding=0),
-            nn.Sigmoid()
+            # [이 프로젝트 수정] relative=True면 원본 상대깊이 헤드(ReLU + Identity). 가중치 키는 같다
+            *((nn.ReLU(True), nn.Identity()) if relative else (nn.Sigmoid(),))
         )
     
     def forward(self, out_features, patch_h, patch_w):
@@ -159,6 +161,8 @@ class DepthAnythingV2(nn.Module):
         use_clstoken=False,
         max_depth=20.0
     ):
+        # [이 프로젝트 수정] max_depth=None이면 상대깊이 모델(원본 depth_anything_v2/dpt.py와 같은 출력:
+        # 단위 없는 상대 역깊이, 클수록 가까움).
         super(DepthAnythingV2, self).__init__()
         
         self.intermediate_layer_idx = {
@@ -173,14 +177,15 @@ class DepthAnythingV2(nn.Module):
         self.encoder = encoder
         self.pretrained = DINOv2(model_name=encoder)
         
-        self.depth_head = DPTHead(self.pretrained.embed_dim, features, use_bn, out_channels=out_channels, use_clstoken=use_clstoken)
+        self.depth_head = DPTHead(self.pretrained.embed_dim, features, use_bn, out_channels=out_channels, use_clstoken=use_clstoken, relative=max_depth is None)
     
     def forward(self, x):
         patch_h, patch_w = x.shape[-2] // 14, x.shape[-1] // 14
         
         features = self.pretrained.get_intermediate_layers(x, self.intermediate_layer_idx[self.encoder], return_class_token=True)
         
-        depth = self.depth_head(features, patch_h, patch_w) * self.max_depth
+        depth = self.depth_head(features, patch_h, patch_w)
+        depth = F.relu(depth) if self.max_depth is None else depth * self.max_depth
         
         return depth.squeeze(1)
     

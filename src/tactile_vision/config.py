@@ -39,6 +39,10 @@ class DepthCfg:
     input_spec: str = "wide"
     max_depth_m: float = 20.0
     metric: bool = True
+    # 실외 엔진 종류: metric = metric 모델 출력(m) 그대로 | ground = 상대깊이 + 땅 기준 환산(ground 섹션)
+    outdoor_kind: str = "metric"
+    # 실내 모델(depth.engine) 출력에 더하는 값(m). 0 = 보정 없음. scene.mode와 관계없이 실내 모델에 적용
+    indoor_offset_m: float = 0.0
 
     @property
     def spec(self) -> geo.InputSpec:
@@ -47,6 +51,21 @@ class DepthCfg:
                 f"input_spec '{self.input_spec}' 없음. 가능: {list(geo.INPUT_SPECS)}"
             )
         return geo.INPUT_SPECS[self.input_spec]
+
+
+@dataclass
+class GroundCfg:
+    """
+    땅 기준 거리 환산(depth.outdoor_kind = ground)의 카메라 기하. src/tactile_vision/ground.py 참고.
+    """
+
+    height_m: float = 0.70  # 렌즈 높이 (땅에서)
+    pitch_deg: float = 0.0  # 카메라 기울기, + = 아래를 봄
+    f_px: float = 908.0  # 초점거리 (camera.width × height 원본 픽셀). C920 1280×720 ≈ 908
+    cy_px: float | None = None  # 주점 세로 위치(원본 픽셀). None = 화면 가운데
+    band_max_m: float = 3.5  # 이 깊이 안쪽 땅 줄만 배율 계산에 쓴다
+    smooth_tau_s: float = 1.0  # 배율 A의 로그 영역 시간 평활 시상수. 0 = 평활 안 함
+    min_rows: int = 10  # 땅 줄이 이보다 적으면 기동 실패
 
 
 @dataclass
@@ -163,6 +182,7 @@ class RuntimeCfg:
 class Config:
     camera: CameraCfg = field(default_factory=CameraCfg)
     depth: DepthCfg = field(default_factory=DepthCfg)
+    ground: GroundCfg = field(default_factory=GroundCfg)
     grid: GridCfg = field(default_factory=GridCfg)
     mapping: MappingCfg = field(default_factory=MappingCfg)
     filter: FilterCfg = field(default_factory=FilterCfg)
@@ -192,6 +212,19 @@ class Config:
         if c.autofocus is True and c.focus is not None:
             warns.append("camera.autofocus가 true라 camera.focus는 무시됨")
 
+        d, g = self.depth, self.ground
+        if d.outdoor_kind not in {"metric", "ground"}:
+            raise ValueError(f"depth.outdoor_kind는 metric | ground: {d.outdoor_kind}")
+        if not -2.0 <= d.indoor_offset_m <= 2.0:
+            raise ValueError(f"depth.indoor_offset_m 범위 초과(-2~2 m): {d.indoor_offset_m}")
+        if not 0.2 <= g.height_m <= 2.5:
+            raise ValueError(f"ground.height_m 범위 초과(0.2~2.5 m): {g.height_m}")
+        if not -30.0 <= g.pitch_deg <= 30.0:
+            raise ValueError(f"ground.pitch_deg 범위 초과(-30~30°): {g.pitch_deg}")
+        if g.f_px <= 0 or g.band_max_m <= 1.0 or g.smooth_tau_s < 0 or g.min_rows < 1:
+            raise ValueError("ground: f_px > 0, band_max_m > 1, smooth_tau_s >= 0, min_rows >= 1 이어야 함")
+        if d.outdoor_kind == "ground" and self.scene.mode in {"off", "indoor"}:
+            warns.append(f"depth.outdoor_kind = ground지만 scene.mode = {self.scene.mode}라 실외 엔진을 쓰지 않음")
         s = self.scene
         if s.mode not in {"auto", "indoor", "outdoor", "off"}:
             raise ValueError(f"scene.mode는 auto | indoor | outdoor | off: {s.mode}")

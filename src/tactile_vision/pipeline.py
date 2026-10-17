@@ -7,6 +7,9 @@
 장면 전환(scene.mode = auto)이면 실내·실외 깊이 엔진과 Places365 판별기를 함께 올리고,
 프레임마다 SceneSwitcher가 고른 모델만 돌린다. 애매하면 두 모델의 셀별 최소(가까운 값).
 
+2026-10-17 (ground-scale 가지): 실내 모델에 depth.indoor_offset_m을 더하고, 실외는
+depth.outdoor_kind = ground면 상대깊이 엔진 + 땅 기준 환산(ground.py)으로 미터를 낸다.
+
 단계별 소요시간을 상시 계측한다. 졸업논문의 지연 예산 표를 이 계측값으로 채운다.
 """
 
@@ -23,9 +26,10 @@ import numpy as np
 
 from . import geometry as geo
 from .calibration import CalibTable
-from .camera import Camera, Frame, VideoFileSource
+from .camera import Camera, Frame, VideoFileSource, crop_rect
 from .config import Config
 from .depth import DepthEngine
+from .ground import GroundScaler
 from .hazard import HazardEncoder
 from .mapping import DepthMapper
 from .scene import SceneClassifier
@@ -194,13 +198,21 @@ class Pipeline:
         self.engines: dict[str, DepthEngine] = {}
         for key in ENGINES_FOR_MODE[sc.mode]:
             p = cfg.path(paths[key])
+            ground_kind = key == "outdoor" and cfg.depth.outdoor_kind == "ground"
             if not p.exists():
-                flag = " --outdoor" if key == "outdoor" else ""
+                flag = (" --relative" if ground_kind else " --outdoor") if key == "outdoor" else ""
                 raise FileNotFoundError(
                     f"{SCENE_KO[key]} 깊이 엔진 없음: {p}\n"
                     f"  생성: python tools/build_engine.py --spec {cfg.depth.input_spec}{flag}"
                 )
-            self.engines[key] = DepthEngine(cfg.depth, cfg.grid, p)
+            if ground_kind:
+                self.engines[key] = DepthEngine(cfg.depth, cfg.grid, p,
+                                                ground=self._make_ground(cfg, source))
+            else:
+                off = cfg.depth.indoor_offset_m if key == "indoor" else 0.0
+                if off:
+                    logger.info("실내 모델 보정: 출력 %+.2f m", off)
+                self.engines[key] = DepthEngine(cfg.depth, cfg.grid, p, offset_m=off)
         self.depth = next(iter(self.engines.values()))  # 호환용: 첫 엔진
         self._last_models: tuple[str, ...] = (next(iter(self.engines)),)
 
@@ -234,15 +246,36 @@ class Pipeline:
             self._csv = csv.writer(self._csv_file)
             # scene: 확정 장면(off = 전환 안 함), uncertain: 애매 1/0, p_out: 최근 판별 P(실외),
             # p_smooth: 평활 P(실외), models: 돌린 깊이 모델(indoor|outdoor|both), far_m: 이번 d_far
+            # ground_A: 실외 땅 기준 배율(평활값, 이번 프레임에 실외 엔진을 돌렸을 때만). 기존 열 순서는 그대로
             self._csv.writerow(
                 ["frame", "age_ms", "scene_ms", "depth_ms", "hazard_ms", "filter_ms", "tx_ms",
                  "total_ms", "sent", "scene", "uncertain", "p_out", "p_smooth", "models", "far_m"]
                 + [f"d{i}" for i in range(geo.CELL_COUNT)]
                 + [f"L{i}" for i in range(geo.CELL_COUNT)]
+                + ["ground_A"]
             )
             logger.info("계측 로그: %s", p)
 
         self._last_t = time.perf_counter()
+
+    @staticmethod
+    def _make_ground(cfg: Config, source) -> GroundScaler:
+        """카메라 실제 크롭(열려 있으면)으로 땅 기준 환산기를 만든다."""
+        spec = cfg.depth.spec
+        crop = getattr(source, "_crop", None)
+        if crop is None:
+            crop = crop_rect(cfg.camera.width, cfg.camera.height, spec.width / spec.height)
+        if isinstance(source, VideoFileSource):
+            logger.warning("영상 파일 입력: 땅 기준 환산은 장치 카메라(초점거리 %g px, 높이 %.2f m)를 "
+                           "가정하므로 다른 카메라 영상에서는 거리가 맞지 않는다",
+                           cfg.ground.f_px, cfg.ground.height_m)
+        return GroundScaler(cfg.ground, spec.width, spec.height, tuple(int(v) for v in crop),
+                            cfg.camera.width)
+
+    def ground_scale(self) -> float | None:
+        """실외 땅 기준 배율 A(평활값). 땅 기준 엔진이 없으면 None."""
+        e = self.engines.get("outdoor")
+        return None if e is None or e.ground is None else e.ground.value
 
     # ── 예열 ──
     def warmup(self, n: int = 10) -> dict[str, float]:
@@ -266,6 +299,8 @@ class Pipeline:
         # 예열 중 쌓인 통계는 버린다
         self.stats = Stats()
         self.mapper.reset()
+        for e in self.engines.values():
+            e.reset()
         return out
 
     # ── 기동 시 Pico 동기화 ──
@@ -324,7 +359,7 @@ class Pipeline:
 
         t1 = time.perf_counter()
         models = dec.models if dec is not None else self._last_models
-        cells = [self.engines[k].infer(frame.image) for k in models]
+        cells = [self.engines[k].infer(frame.image, now=frame.ts) for k in models]
         # 두 모델이면 셀마다 더 가까운 값. fmin: 한쪽이 NaN이어도 다른 쪽 값을 쓴다
         cell_dist = cells[0] if len(cells) == 1 else np.fmin.reduce(cells)
         self._last_models = models
@@ -366,6 +401,8 @@ class Pipeline:
                 + sc + [round(self.mapper.active_far_m, 3)]
                 + [round(float(v), 3) for v in cell_dist]
                 + [int(v) for v in levels]
+                + [round(self.ground_scale(), 4) if "outdoor" in models and self.ground_scale() is not None
+                   else ""]
             )
         return r
 

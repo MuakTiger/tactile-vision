@@ -13,6 +13,9 @@ Depth Anything V2 metric TensorRT 추론 + GPU 셀 풀링.
    가장 가까운 표면'이다.
 4. execute_async_v3 후 스트림 동기화를 반드시 한다. 기존 main.py/main4.py는
    동기화 없이 .cpu()를 호출해 추론 미완료 버퍼를 읽을 수 있었다.
+5. (2026-10-17) 출력 → 미터 변환 두 가지를 셀 풀링 전에 넣을 수 있다.
+   offset_m: metric 출력에 더함(실내 모델 −0.44 m 보정).
+   ground:   상대깊이 출력 r을 땅 기준 배율 A로 A / r 미터로 바꿈(ground.py).
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ import torch
 
 from . import geometry as geo
 from .config import DepthCfg, GridCfg
+from .ground import GroundScaler
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +44,16 @@ class DepthEngine:
     전체 깊이맵이 필요하면 last_depth_map()으로 가져온다(디버그용, 비용 발생).
     """
 
-    def __init__(self, dcfg: DepthCfg, gcfg: GridCfg, engine_path: Path) -> None:
+    def __init__(self, dcfg: DepthCfg, gcfg: GridCfg, engine_path: Path,
+                 offset_m: float = 0.0, ground: GroundScaler | None = None) -> None:
         self.dcfg = dcfg
         self.gcfg = gcfg
         self.spec = dcfg.spec
+        # 출력 → 미터: ground가 있으면 상대깊이(A / r), 없으면 metric 출력 + offset_m
+        self.offset_m = float(offset_m)
+        self.ground = ground
+        if ground is not None and self.offset_m:
+            raise ValueError("ground 환산과 offset_m을 함께 쓸 수 없음")
 
         if not torch.cuda.is_available():
             raise RuntimeError("CUDA를 사용할 수 없음")
@@ -84,6 +94,7 @@ class DepthEngine:
         self.context.set_tensor_address(self.in_name, int(self.d_input.data_ptr()))
         self.context.set_tensor_address(self.out_name, int(self.d_output.data_ptr()))
 
+        self._depth_buf = torch.empty((self.spec.height, self.spec.width), dtype=torch.float32, device=dev)
         self._mean = torch.tensor(IMAGENET_MEAN, device=dev).view(3, 1, 1)
         self._std = torch.tensor(IMAGENET_STD, device=dev).view(3, 1, 1)
         # BGR→RGB 채널 재배열 인덱스
@@ -163,16 +174,34 @@ class DepthEngine:
         # percentile: k번째 최솟값 = 가까운 쪽 분위수
         return blocks.kthvalue(self._k, dim=1).values
 
+    # ── 출력 → 미터 ──
+    def _to_metres(self, out: torch.Tensor, now: float | None) -> torch.Tensor:
+        """엔진 출력 (H, W) → 미터 깊이맵. 같은 스트림 안에서 부른다."""
+        if self.ground is not None:
+            a = self.ground.update(out, now)  # .item()이 이 스트림의 추론 완료를 기다린다
+            buf = torch.clamp(out, min=1e-6, out=self._depth_buf)  # r ≤ 0(하늘) → 아주 먼 거리
+            return buf.reciprocal_().mul_(a)  # a가 NaN(처음부터 무효)이면 전부 NaN = 무효 셀
+        if self.offset_m:
+            # 보정 뒤 0 이하가 되면(아주 가까움) 1 cm로 — 근거리 최대 단계로 간다
+            return torch.add(out, self.offset_m, out=self._depth_buf).clamp_(min=0.01)
+        return out
+
+    def reset(self) -> None:
+        """시간 상태(땅 기준 배율 평활) 초기화. 예열 뒤에 부른다."""
+        if self.ground is not None:
+            self.ground.reset()
+
     # ── 추론 ──
     @torch.inference_mode()
-    def infer(self, bgr: np.ndarray) -> np.ndarray:
-        """BGR (H,W,3) uint8 → 셀 거리 (24,) float32 미터."""
+    def infer(self, bgr: np.ndarray, now: float | None = None) -> np.ndarray:
+        """BGR (H,W,3) uint8 → 셀 거리 (24,) float32 미터. now: 프레임 시각(땅 기준 평활용)."""
         with torch.cuda.stream(self.stream):
             self._preprocess(bgr)
             ok = self.context.execute_async_v3(stream_handle=self.stream.cuda_stream)
             if not ok:
                 raise RuntimeError("TRT 추론 실행 실패")
-            depth = self.d_output.view(self.spec.height, self.spec.width)
+            out = self.d_output.view(self.spec.height, self.spec.width)
+            depth = self._to_metres(out, now)
             cells = self._pool_cells(depth)
         # 반드시 동기화 후에 읽는다 — 이 한 줄이 없으면 미완료 버퍼를 읽는다
         self.stream.synchronize()
@@ -195,5 +224,6 @@ class DepthEngine:
         for _ in range(n):
             self.infer(dummy)
         ms = (time.perf_counter() - t0) / n * 1000
+        self.reset()  # 빈 화면으로 잡힌 땅 기준 배율을 버린다
         logger.info("예열 완료: 평균 추론 %.1fms (%.1f fps 상당)", ms, 1000 / ms)
         return ms
