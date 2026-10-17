@@ -199,9 +199,21 @@ python run.py --mapping linear       # 절제
 ### 핀 캘리브레이션 (조립 후 필수)
 
 3D 프린트 공차로 24개 핀 높이가 다르다. 채널마다 home/max tick을 실측한다.
-지금 값(2026-10-05): 24칸 모두 home 372(핀 맨 아래) / max 232(핀 맨 위) — 서보를 역방향으로 조립해 tick이 작을수록 핀이 위.
-Pico 기동 기본값(`tactile_core.h` HOME/MAX_TICK_DEFAULT)과 젯슨 기본값(`calibration.py` DEVICE_*)도 같은 값이다.
-범위를 바꾸면 세 곳을 함께 바꿀 것 (`tools/test_firmware.py`가 일치를 확인). 서보 시험 도구들은 이 파일의 범위·방향을 그대로 쓴다.
+공통 기준(2026-10-05): home 372(핀 맨 아래) / max 232(핀 맨 위) — 서보를 역방향으로 조립해 tick이 작을수록 핀이 위.
+**칸별 영점 보정(2026-10-17, `tools/pin_zero_gui.py`)**: 0단계가 패드 표면과 같아지게 칸마다 home·max에 같은 tick을 더했다
+(스트로크 140 tick 유지). 보정량(tick, + = 핀이 내려감), 화면 위 줄 왼쪽부터:
+
+```
+ 50  10   0 -30  25  80
+  0  -5 -15 -55   0  20
+-50 -10 -15 -40 -50   0
+  0  20  -5 -25  45  50
+```
+
+이 값은 `calib/servo_calib.json`, Pico 기동 기본값(`tactile_core.h` ZERO_SHIFT_DEFAULT — 젯슨 연결 전에 Pico가 켜져도
+이 위치), 젯슨 기본값(`calibration.py` DEVICE_ZERO_SHIFT, 파일이 없을 때) 세 곳이 같다. 보정을 바꾸면 세 곳을 함께 바꾸고
+펌웨어를 다시 올릴 것(`tools/test_firmware.py`가 일치를 확인). 보정 전 파일: `calib/servo_calib_before_zero_1017_2203.json`.
+서보 시험 도구들은 이 파일의 범위·방향을 그대로 쓴다.
 
 ```bash
 python tools/calibrate_pins.py
@@ -227,6 +239,7 @@ python tools/test_firmware.py    # Pico 펌웨어 v3 (박자 적용, 진동, fai
 python tools/servo_updown_test.py  # 실물 배선 점검: 추론 없이 24칸 아래↔위 (I2C 0x40/0x41 응답도 보고)
 python tools/servo_slow_updown.py  # 실물 동작 점검: 24개 모터가 함께 천천히 위아래 (범위 제한, 1 tick 단위 연속)
 python tools/servo_wave_test.py    # 실물 순서 점검: 핀이 PCA 채널 순서대로 하나씩 파도처럼 (--order cell|column)
+python tools/pin_zero_gui.py      # 핀 영점: 창에서 칸을 골라 0단계 높이를 1 tick씩 맞춤(7단계도 같은 양 이동), Enter 저장
 python tools/servo_latency_flip.py --count 10  # 구동 지연: 칸 9를 0↔7단계로 바꾸며 화면 흰·검 전환(폰 240 fps로 같이 촬영), 기록 logs/latency_flip_*.csv
 python tools/benchmark.py        # 단계별 지연 분해 + 종단 지연 예산
 ```

@@ -22,7 +22,7 @@
  *     RETURN_STEP_MS(10 ms)마다 1 tick씩 내린다(≈46도/s, 범위 140 tick을 1.4 s). 보관 값 폐기.
  *     다음 핀 값이 박자에 적용되면 보통 속도로 돌아간다. 캘리브레이션 도구는 KEEPALIVE(0x07)로 failsafe를 막는다.
  *     ※ Pico 전원이 끊기면(USB를 뽑는 등) 신호가 사라져 서보가 힘을 잃는다 — 소프트웨어로 내릴 수 없다.
- *       다시 켜지면 기본값(HOME_TICK_DEFAULT)으로 간다(서보 위치를 모르므로 이때는 서보 자체 속도).
+ *       다시 켜지면 칸별 기본 home(homeDefault)으로 간다(서보 위치를 모르므로 이때는 서보 자체 속도).
  *  5. 슬루 제한(5 ms당 4 tick)과 동시 구동 제한(maxSimultaneous, 상승 우선)은 v2와 같다.
  *
  * 프로토콜은 src/tactile_vision/protocol.py와 반드시 일치해야 한다.
@@ -76,10 +76,25 @@ static_assert(channelMapIsPermutation(), "CELL_TO_CHANNEL: 보드마다 채널 0
 constexpr uint16_t TICK_HARD_MIN = 82;
 constexpr uint16_t TICK_HARD_MAX = 533;
 // 채널 기본값 — 이 장치(2026-10-05): 서보를 역방향으로 조립(tick이 커질수록 핀이 내려감), 사용자 범위 232~372 tick.
-// 젯슨이 연결되면 calib/servo_calib.json 값을 SET_LIMIT으로 덮어쓴다. 젯슨 연결 전에 Pico가 켜지면 핀이 이 home으로 간다
-// → 캘리브레이션 범위를 바꾸면 이 두 값도 함께 바꿀 것.
-constexpr uint16_t HOME_TICK_DEFAULT = 372;  // 1816 us (124.7도) — 핀 맨 아래 (레벨 0, 먼 곳)
-constexpr uint16_t MAX_TICK_DEFAULT = 232;   // 1133 us (60.0도)  — 핀 맨 위 (가까운 곳)
+// 젯슨이 연결되면 calib/servo_calib.json 값을 SET_LIMIT으로 덮어쓴다. 젯슨 연결 전에 Pico가 켜지면 핀이 칸별 기본 home으로 간다
+// → 캘리브레이션을 바꾸면 아래 값도 함께 바꿀 것(tools/test_firmware.py가 calib 파일·calibration.py와 같은지 확인).
+constexpr uint16_t HOME_TICK_DEFAULT = 372;  // 1816 us (124.7도) — 공통 기준(영점 보정 전) 핀 맨 아래 (레벨 0, 먼 곳)
+constexpr uint16_t MAX_TICK_DEFAULT = 232;   // 1133 us (60.0도)  — 공통 기준(영점 보정 전) 핀 맨 위 (가까운 곳)
+// 칸별 영점 보정 (2026-10-17, tools/pin_zero_gui.py): 0단계가 패드 표면과 같아지게 home·max에 같이 더하는 tick.
+// + = tick 증가(이 장치는 핀이 내려감). 칸 순서 = 화면 위 줄 왼쪽부터. PC 하네스 기본 빌드(-DTV_UNIFORM_DEFAULTS)는
+// 모든 칸 0으로 두고 동작 규칙만 시험한다.
+#ifdef TV_UNIFORM_DEFAULTS
+constexpr int16_t ZERO_SHIFT_DEFAULT[CELL_COUNT] = {};
+#else
+constexpr int16_t ZERO_SHIFT_DEFAULT[CELL_COUNT] = {
+     50,  10,   0, -30,  25,  80,
+      0,  -5, -15, -55,   0,  20,
+    -50, -10, -15, -40, -50,   0,
+      0,  20,  -5, -25,  45,  50,
+};
+#endif
+constexpr uint16_t homeDefault(uint8_t cell) { return (uint16_t)(HOME_TICK_DEFAULT + ZERO_SHIFT_DEFAULT[cell]); }
+constexpr uint16_t maxDefault(uint8_t cell) { return (uint16_t)(MAX_TICK_DEFAULT + ZERO_SHIFT_DEFAULT[cell]); }
 
 // 천천히 홈 복귀 — 종료(HOME_ALL)·통신 끊김(failsafe) 때. RETURN_STEP_MS마다 1 tick = 100 tick/s ≈ 46도/s
 // → 범위 140 tick을 약 1.4 s에 내린다. ESTOP만 즉시. 새 핀 값(GRID)이 박자에 적용되면 보통 속도로 돌아간다.
@@ -186,10 +201,10 @@ class Core {
     sayFn_ = sayFn;
     hook_ = hook;
     for (uint8_t ch = 0; ch < CELL_COUNT; ch++) {
-      cal[ch].homeTick = HOME_TICK_DEFAULT;
-      cal[ch].maxTick = MAX_TICK_DEFAULT;
+      cal[ch].homeTick = homeDefault(ch);
+      cal[ch].maxTick = maxDefault(ch);
       level[ch] = hazard[ch] = pendLevel[ch] = pendHazard[ch] = 0;
-      targetTick[ch] = currentTick[ch] = HOME_TICK_DEFAULT;
+      targetTick[ch] = currentTick[ch] = homeDefault(ch);
       writtenTick[ch] = 0xFFFF;  // 첫 쓰기를 강제
     }
     restartTimers(now);

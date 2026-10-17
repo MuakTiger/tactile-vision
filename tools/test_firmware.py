@@ -67,7 +67,9 @@ def check(cond: bool, msg: str) -> None:
 # ── 하네스 빌드 ──
 tmp = tempfile.TemporaryDirectory(prefix="tv_fw_")
 EXE = Path(tmp.name) / "fw_test"
-r = subprocess.run(["g++", "-O2", "-std=c++17", "-Wall", "-Wextra", "-o", str(EXE),
+# 기본 하네스는 모든 칸을 같은 기동 범위로(-DTV_UNIFORM_DEFAULTS) 두고 동작 규칙을 시험한다.
+# 칸별 영점 보정이 들어간 실기와 같은 빌드(EXE_CAL)는 10절 끝에서 기동 위치만 따로 본다.
+r = subprocess.run(["g++", "-O2", "-std=c++17", "-Wall", "-Wextra", "-DTV_UNIFORM_DEFAULTS", "-o", str(EXE),
                     str(REPO / "firmware/pico/test_harness.cpp")], capture_output=True, text=True)
 print("=" * 72)
 print("0. 하네스 빌드 (실기와 같은 tactile_core.h)")
@@ -81,9 +83,9 @@ if r.returncode != 0:
 class Sim:
     """시뮬레이션 결과. writes[ch] = [(t, tick)], targets[ch] = [(t, tick)], says = [(t, msg)]."""
 
-    def __init__(self, events: list[tuple[int, bytes]], end_ms: int) -> None:
+    def __init__(self, events: list[tuple[int, bytes]], end_ms: int, exe: Path | None = None) -> None:
         blob = b"".join(struct.pack("<IH", t, len(b)) + b for t, b in sorted(events, key=lambda e: e[0]))
-        out = subprocess.run([str(EXE), "--sim", str(end_ms)], input=blob, capture_output=True,
+        out = subprocess.run([str(exe or EXE), "--sim", str(end_ms)], input=blob, capture_output=True,
                              timeout=120)
         if out.returncode != 0:
             raise RuntimeError(out.stderr.decode())
@@ -514,10 +516,27 @@ from tactile_vision import calibration as CAL  # noqa: E402
 check(fw_def == {"HOME_TICK_DEFAULT": CAL.DEVICE_HOME_TICK, "MAX_TICK_DEFAULT": CAL.DEVICE_MAX_TICK} == {
       "HOME_TICK_DEFAULT": HOME, "MAX_TICK_DEFAULT": MAX},
       f"펌웨어 기동 기본값 = Python 장치 기본 범위 = 이 시험 기준 (home {HOME}, max {MAX})")
-dt = CAL.CalibTable.default()
-check(all((c.home_tick, c.max_tick) == (HOME, MAX) for c in dt.channels),
-      "캘리브레이션 파일이 없을 때 젯슨 기본값도 같은 범위·방향 (가까우면 핀 위)")
 real = CAL.CalibTable.load(REPO / "calib/servo_calib.json")
+# 칸별 영점 보정: 펌웨어 표 = Python 표 = 캘리브레이션 파일(home − 372, max − 232가 같음 = 스트로크 유지)
+m = re.search(r"#else\s*constexpr int16_t ZERO_SHIFT_DEFAULT\[CELL_COUNT\] = \{([^}]*)\};", hdr)
+fw_shift = [int(v) for v in m.group(1).replace("\n", " ").split(",") if v.strip()] if m else []
+file_shift = [(c.home_tick - HOME, c.max_tick - MAX) for c in real.channels]
+check(len(fw_shift) == N and tuple(fw_shift) == CAL.DEVICE_ZERO_SHIFT
+      and all(h == x == f for (h, x), f in zip(file_shift, fw_shift)),
+      f"칸별 영점 보정 표: 펌웨어 = calibration.py = calib 파일 (범위 {min(fw_shift or [0]):+d}~{max(fw_shift or [0]):+d} tick)")
+dt = CAL.CalibTable.default()
+check(all((c.home_tick, c.max_tick) == (r_.home_tick, r_.max_tick) for c, r_ in zip(dt.channels, real.channels)),
+      "캘리브레이션 파일이 없을 때 젯슨 기본값 = 칸별 영점 보정 반영 범위 (가까우면 핀 위)")
+EXE_CAL = Path(tmp.name) / "fw_test_cal"
+rc = subprocess.run(["g++", "-O2", "-std=c++17", "-Wall", "-Wextra", "-o", str(EXE_CAL),
+                     str(REPO / "firmware/pico/test_harness.cpp")], capture_output=True, text=True)
+check(rc.returncode == 0 and rc.stderr.strip() == "", "실기와 같은 빌드(칸별 영점 보정 포함) 경고 없이 성공")
+if rc.returncode == 0:
+    s = Sim([], 50, exe=EXE_CAL)
+    first = {c: s.writes[c][0] for c in range(N)}
+    check(all(first[c] == (0, HOME + fw_shift[c]) for c in range(N)),
+          "실기 빌드: Pico가 켜지면 젯슨 연결 전에도 칸마다 보정된 0단계로 (칸 5 = "
+          f"{HOME + fw_shift[5] if fw_shift else '-'} tick)")
 tt = CAL.CalibTable.for_tool(REPO / "calib/servo_calib.json", 8, None, None, "t")
 check(all((a == b).all() for a, b in zip(tt.ends(), real.ends())),
       f"시험 도구 범위 기본값 = 캘리브레이션 파일 ({tt.range_text()})")

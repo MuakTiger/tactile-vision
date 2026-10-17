@@ -34,8 +34,11 @@ TICK_MIN, TICK_MAX = 0, 4095
 
 # 이 장치의 기본 범위 (2026-10-05). 펌웨어 tactile_core.h HOME/MAX_TICK_DEFAULT와 같아야 한다(test_firmware가 확인).
 # 서보를 역방향으로 조립해 tick이 커질수록 핀이 내려간다. 사용자 결정 범위 232~372 tick(60°부터 140 tick, 9.0 mm).
-DEVICE_HOME_TICK = 372  # 핀 맨 아래 (레벨 0, 먼 곳) ≈ 124.7°
-DEVICE_MAX_TICK = 232  # 핀 맨 위 (가까운 곳) ≈ 60°
+DEVICE_HOME_TICK = 372  # 공통 기준(영점 보정 전) 핀 맨 아래 (레벨 0, 먼 곳) ≈ 124.7°
+DEVICE_MAX_TICK = 232  # 공통 기준(영점 보정 전) 핀 맨 위 (가까운 곳) ≈ 60°
+# 칸별 영점 보정 (2026-10-17, tools/pin_zero_gui.py): home·max에 같이 더하는 tick(+ = 핀이 내려감).
+# 펌웨어 ZERO_SHIFT_DEFAULT, calib/servo_calib.json과 같아야 한다(test_firmware가 확인).
+DEVICE_ZERO_SHIFT = (50, 10, 0, -30, 25, 80, 0, -5, -15, -55, 0, 20, -50, -10, -15, -40, -50, 0, 0, 20, -5, -25, 45, 50)
 
 
 @dataclass
@@ -111,8 +114,8 @@ class CalibTable:
     @classmethod
     def default(cls, levels: int = 8, stroke_mm: float | None = None) -> CalibTable:
         """
-        캘리브레이션 파일이 없을 때 쓰는 초기 테이블 — 이 장치의 기본 범위(펌웨어 기동 기본값과 같음).
-        stroke_mm을 주면 같은 home·방향으로 그 스트로크만큼만 올린다.
+        캘리브레이션 파일이 없을 때 쓰는 초기 테이블 — 이 장치의 기본 범위에 칸별 영점 보정(DEVICE_ZERO_SHIFT)을
+        더한 값(펌웨어 기동 기본값과 같음). stroke_mm을 주면 같은 home·방향으로 그 스트로크만큼만 올린다.
         """
         home = DEVICE_HOME_TICK
         top = DEVICE_MAX_TICK
@@ -126,11 +129,12 @@ class CalibTable:
             created=datetime.now().isoformat(timespec="seconds"),
             levels=levels,
             notes=(
-                "장치 기본 범위 (미측정, 펌웨어 기동 기본값과 같음). "
-                "tools/calibrate_pins.py 로 채널별 실측 후 교체할 것."
+                "장치 기본 범위 + 칸별 영점 보정(2026-10-17, 펌웨어 기동 기본값과 같음). "
+                "보정을 다시 하려면 tools/pin_zero_gui.py."
             ),
             channels=[
-                ChannelCalib(ch=i, home_tick=home, max_tick=top, note="미측정")
+                ChannelCalib(ch=i, home_tick=home + DEVICE_ZERO_SHIFT[i], max_tick=top + DEVICE_ZERO_SHIFT[i],
+                             note=f"기본값(영점 보정 {DEVICE_ZERO_SHIFT[i]:+d} tick)")
                 for i in range(geo.CELL_COUNT)
             ],
         )

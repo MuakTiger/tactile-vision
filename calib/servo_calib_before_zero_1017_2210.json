@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "created": "2026-09-22T23:02:03",
+  "levels": 8,
+  "notes": "핀 영점 보정 2026-10-17 22:04 (tools/pin_zero_gui.py): 칸마다 0단계가 패드 표면과 같아지게 home_tick을 옮기고 max_tick도 같은 양만큼 옮김(스트로크 유지). 보정 전 파일: servo_calib_before_zero_1017_2203.json",
+  "channels": [
+    {
+      "ch": 0,
+      "home_tick": 412,
+      "max_tick": 272,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -40 tick(-2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 1,
+      "home_tick": 382,
+      "max_tick": 242,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -10 tick(-0.65 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 2,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 3,
+      "home_tick": 347,
+      "max_tick": 207,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +25 tick(+1.61 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 4,
+      "home_tick": 402,
+      "max_tick": 262,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -30 tick(-1.94 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 5,
+      "home_tick": 412,
+      "max_tick": 272,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -40 tick(-2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 6,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 7,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 8,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 9,
+      "home_tick": 332,
+      "max_tick": 192,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +40 tick(+2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 10,
+      "home_tick": 392,
+      "max_tick": 252,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -20 tick(-1.29 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 11,
+      "home_tick": 412,
+      "max_tick": 272,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -40 tick(-2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 12,
+      "home_tick": 332,
+      "max_tick": 192,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +40 tick(+2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 13,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 14,
+      "home_tick": 377,
+      "max_tick": 237,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -5 tick(-0.32 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 15,
+      "home_tick": 342,
+      "max_tick": 202,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +30 tick(+1.94 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 16,
+      "home_tick": 332,
+      "max_tick": 192,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +40 tick(+2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 17,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 18,
+      "home_tick": 372,
+      "max_tick": 232,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +0 tick(+0.00 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 19,
+      "home_tick": 392,
+      "max_tick": 252,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -20 tick(-1.29 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 20,
+      "home_tick": 367,
+      "max_tick": 227,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +5 tick(+0.32 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 21,
+      "home_tick": 347,
+      "max_tick": 207,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 +25 tick(+1.61 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 22,
+      "home_tick": 407,
+      "max_tick": 267,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -35 tick(-2.26 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    },
+    {
+      "ch": 23,
+      "home_tick": 412,
+      "max_tick": 272,
+      "note": "영점 보정 2026-10-17 22:04: 0단계 -40 tick(-2.58 mm), home·max 같은 양 이동 (tools/pin_zero_gui.py)"
+    }
+  ],
+  "_derived": {
+    "mm_per_deg": 0.139626,
+    "tick_us": 4.8828,
+    "span_mm_per_channel": [
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04,
+      9.04
+    ]
+  }
+}
