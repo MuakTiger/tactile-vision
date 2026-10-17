@@ -227,6 +227,7 @@ python tools/test_firmware.py    # Pico 펌웨어 v3 (박자 적용, 진동, fai
 python tools/servo_updown_test.py  # 실물 배선 점검: 추론 없이 24칸 아래↔위 (I2C 0x40/0x41 응답도 보고)
 python tools/servo_slow_updown.py  # 실물 동작 점검: 24개 모터가 함께 천천히 위아래 (범위 제한, 1 tick 단위 연속)
 python tools/servo_wave_test.py    # 실물 순서 점검: 핀이 PCA 채널 순서대로 하나씩 파도처럼 (--order cell|column)
+python tools/servo_latency_flip.py --count 10  # 구동 지연: 칸 9를 0↔7단계로 바꾸며 화면 흰·검 전환(폰 240 fps로 같이 촬영), 기록 logs/latency_flip_*.csv
 python tools/benchmark.py        # 단계별 지연 분해 + 종단 지연 예산
 ```
 
